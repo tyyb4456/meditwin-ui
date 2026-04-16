@@ -1,6 +1,44 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Network, MessageSquare, Workflow, ArrowLeft, ChevronRight } from "lucide-react";
+
+// ── Breadcrumb nav helper ──────────────────────────────────────────────────────
+function Breadcrumb({ items }) {
+    return (
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            {items.map((item, i) => (
+                <span key={i} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    {i > 0 && (
+                        <ChevronRight size={10} strokeWidth={2.5} style={{ color: "var(--color-text-subtle)", opacity: 0.5 }} />
+                    )}
+                    {item.onClick ? (
+                        <button
+                            onClick={item.onClick}
+                            style={{
+                                background: "none", border: "none", cursor: "pointer",
+                                fontSize: 11, fontWeight: 700, letterSpacing: "0.12em",
+                                textTransform: "uppercase", color: "var(--color-text-subtle)",
+                                transition: "color 0.2s", padding: 0,
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.color = "var(--color-text)"}
+                            onMouseLeave={e => e.currentTarget.style.color = "var(--color-text-subtle)"}
+                        >
+                            {item.label}
+                        </button>
+                    ) : (
+                        <span style={{
+                            fontSize: 11, fontWeight: 700, letterSpacing: "0.12em",
+                            textTransform: "uppercase",
+                            color: i === items.length - 1 ? "var(--color-text)" : "var(--color-text-subtle)",
+                        }}>
+                            {item.label}
+                        </span>
+                    )}
+                </span>
+            ))}
+        </div>
+    );
+}
 import ThemeToggle from "../theme/ThemeToggle";
 
 const modes = [
@@ -50,6 +88,14 @@ export default function Dashboard() {
         return () => clearTimeout(t);
     }, []);
 
+    const handleModeClick = (modeId) => {
+        if (modeId === "microservices") {
+            navigate("/dashboard/microservices");
+        } else {
+            setSelectedMode(modeId);
+        }
+    };
+
     return (
         <div style={{ minHeight: "100vh", fontFamily: "inherit", background: "var(--color-bg)", overflowX: "hidden" }}>
 
@@ -61,7 +107,8 @@ export default function Dashboard() {
                 background: "var(--color-bg)",
                 borderBottom: "1px solid var(--color-border)",
             }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                    {/* Back button */}
                     <button
                         onClick={() => navigate('/')}
                         style={{
@@ -78,18 +125,22 @@ export default function Dashboard() {
 
                     <div style={{ width: 1, height: 14, background: "var(--color-border)" }} />
 
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <div style={{
-                            width: 26, height: 26, borderRadius: 4,
-                            background: "var(--color-accent)",
-                            display: "flex", alignItems: "center", justifyContent: "center",
-                        }}>
-                            <span style={{ color: "var(--color-bg)", fontSize: 9, fontWeight: 900, letterSpacing: "-0.02em" }}>MT</span>
-                        </div>
-                        <span style={{ color: "var(--color-text)", fontSize: 12, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase" }}>
-                            MediTwin AI
-                        </span>
+                    {/* MT logo */}
+                    <div style={{
+                        width: 26, height: 26, borderRadius: 4,
+                        background: "var(--color-accent)",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>
+                        <span style={{ color: "var(--color-bg)", fontSize: 9, fontWeight: 900, letterSpacing: "-0.02em" }}>MT</span>
                     </div>
+
+                    <div style={{ width: 1, height: 14, background: "var(--color-border)" }} />
+
+                    {/* Breadcrumbs */}
+                    <Breadcrumb items={[
+                        { label: "MediTwin AI", onClick: () => navigate("/") },
+                        { label: "Dashboard" },
+                    ]} />
                 </div>
 
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -189,7 +240,7 @@ export default function Dashboard() {
                             return (
                                 <button
                                     key={mode.id}
-                                    onClick={() => setSelectedMode(mode.id)}
+                                    onClick={() => handleModeClick(mode.id)}
                                     onMouseEnter={() => setHoveredMode(mode.id)}
                                     onMouseLeave={() => setHoveredMode(null)}
                                     style={{
