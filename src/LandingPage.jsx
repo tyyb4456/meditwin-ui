@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   User, Microscope, FlaskConical, Pill, Scan, BarChart2, Scale, FileText,
 } from "lucide-react";
@@ -41,6 +42,7 @@ const stack = [
 ];
 
 export default function LandingPage() {
+  const navigate = useNavigate();
   const [visible, setVisible] = useState(false);
   const [activeQ, setActiveQ] = useState(0);
   const [selectedAgent, setSelectedAgent] = useState(null);
@@ -138,7 +140,7 @@ export default function LandingPage() {
           </p>
 
           <div className="flex flex-wrap gap-4">
-            <button className="group relative px-10 py-4 bg-[var(--color-accent)] text-[var(--color-bg)] text-sm font-black tracking-[0.2em] uppercase overflow-hidden hover:scale-[1.02] transition-transform duration-300">
+            <button onClick={() => navigate('/dashboard')} className="group relative px-10 py-4 bg-[var(--color-accent)] text-[var(--color-bg)] text-sm font-black tracking-[0.2em] uppercase overflow-hidden hover:scale-[1.02] transition-transform duration-300">
               <span className="relative z-10">Get Started →</span>
               <div className="absolute inset-0 bg-[var(--color-accent-hover)] -translate-x-full group-hover:translate-x-0 transition-transform duration-300" />
             </button>
@@ -346,8 +348,8 @@ export default function LandingPage() {
                           {agent.name}
                         </h3>
                         <span className={`text-[10px] font-black tracking-widest px-2 py-0.5 shrink-0 transition-all duration-300 ${agent.tag === "MCP"
-                            ? isSelected ? "border border-[var(--color-bg)] text-[var(--color-bg)]" : "border border-[var(--color-accent)] text-[var(--color-accent)]"
-                            : isSelected ? "bg-[var(--color-bg)] text-[var(--color-accent)]" : "bg-[var(--color-accent)] text-[var(--color-bg)]"
+                          ? isSelected ? "border border-[var(--color-bg)] text-[var(--color-bg)]" : "border border-[var(--color-accent)] text-[var(--color-accent)]"
+                          : isSelected ? "bg-[var(--color-bg)] text-[var(--color-accent)]" : "bg-[var(--color-accent)] text-[var(--color-bg)]"
                           }`}>
                           {agent.tag}
                         </span>
@@ -456,7 +458,7 @@ export default function LandingPage() {
           <h2 className="text-[clamp(36px,6vw,80px)] font-black uppercase tracking-tight text-[var(--color-bg)] leading-[0.9] mb-10">
             One System.<br />Eight Specialists.<br />Three Answers.
           </h2>
-          <button className="group px-12 py-5 bg-[var(--color-bg)] text-[var(--color-accent)] text-sm font-black tracking-[0.2em] uppercase hover:bg-[var(--color-bg)]/90 transition-all duration-300 hover:scale-[1.02]">
+          <button onClick={() => navigate('/dashboard')} className="group px-12 py-5 bg-[var(--color-bg)] text-[var(--color-accent)] text-sm font-black tracking-[0.2em] uppercase hover:bg-[var(--color-bg)]/90 transition-all duration-300 hover:scale-[1.02]">
             Get Started →
           </button>
         </div>
