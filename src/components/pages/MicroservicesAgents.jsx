@@ -305,7 +305,9 @@ export default function MicroservicesAgents() {
                                     onMouseEnter={() => setHoveredAgent(agent.id)}
                                     onMouseLeave={() => setHoveredAgent(null)}
                                     onClick={() => {
-                                        // future: navigate(`/dashboard/microservices/${agent.id}`)
+                                        if (agent.id === "patient-context") {
+                                            navigate("/dashboard/microservices/patient-context");
+                                        }
                                     }}
                                     style={{
                                         position: "relative", textAlign: "left",
@@ -440,7 +442,7 @@ export default function MicroservicesAgents() {
                                                 transition: "opacity 0.25s",
                                             }}>
                                                 <span style={{ fontSize: 10, fontWeight: 700, color: "var(--color-text-subtle)", letterSpacing: "0.08em" }}>
-                                                    Coming soon
+                                                    {agent.id === "patient-context" ? "Explore" : "Coming soon"}
                                                 </span>
                                                 <ChevronRight size={10} strokeWidth={2.5} style={{
                                                     color: "var(--color-text-subtle)",

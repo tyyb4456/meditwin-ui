@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import LandingPage from './LandingPage'
 import Dashboard from './components/pages/Dashboard'
 import MicroservicesAgents from './components/pages/MicroservicesAgents'
+import PatientContextPage from './components/pages/PatientContextPage'
 
 function App() {
   return (
@@ -9,6 +10,7 @@ function App() {
       <Route path="/" element={<LandingPage />} />
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/dashboard/microservices" element={<MicroservicesAgents />} />
+      <Route path="/dashboard/microservices/patient-context" element={<PatientContextPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
