@@ -4,7 +4,7 @@ import {
     ArrowLeft, ChevronRight, UserCheck, Brain, FlaskConical,
     Shield, Eye, GitBranch, Scale, FileText, Cpu, Zap
 } from "lucide-react";
-import ThemeToggle from "../theme/ThemeToggle";
+import ThemeToggle from "../components/theme/ThemeToggle";
 
 const agents = [
     {
@@ -307,6 +307,8 @@ export default function MicroservicesAgents() {
                                     onClick={() => {
                                         if (agent.id === "patient-context") {
                                             navigate("/dashboard/microservices/patient-context");
+                                        } else if (agent.id === "diagnosis") {
+                                            navigate("/dashboard/microservices/diagnosis-agent");
                                         }
                                     }}
                                     style={{
@@ -442,7 +444,7 @@ export default function MicroservicesAgents() {
                                                 transition: "opacity 0.25s",
                                             }}>
                                                 <span style={{ fontSize: 10, fontWeight: 700, color: "var(--color-text-subtle)", letterSpacing: "0.08em" }}>
-                                                    {agent.id === "patient-context" ? "Explore" : "Coming soon"}
+                                                    {(agent.id === "patient-context" || agent.id === "diagnosis") ? "Explore" : "Coming soon"}
                                                 </span>
                                                 <ChevronRight size={10} strokeWidth={2.5} style={{
                                                     color: "var(--color-text-subtle)",

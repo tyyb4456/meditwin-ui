@@ -1,8 +1,9 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import LandingPage from './LandingPage'
-import Dashboard from './components/pages/Dashboard'
-import MicroservicesAgents from './components/pages/MicroservicesAgents'
-import PatientContextPage from './components/pages/PatientContextPage'
+import Dashboard from './pages/Dashboard'
+import MicroservicesAgents from './pages/MicroservicesAgents'
+import PatientContextPage from './pages/PatientContextPage'
+import DiagnosisAgent from "./pages/DiagnosisAgent"
 
 function App() {
   return (
@@ -11,6 +12,7 @@ function App() {
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/dashboard/microservices" element={<MicroservicesAgents />} />
       <Route path="/dashboard/microservices/patient-context" element={<PatientContextPage />} />
+      <Route path="/dashboard/microservices/diagnosis-agent" element={<DiagnosisAgent />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )

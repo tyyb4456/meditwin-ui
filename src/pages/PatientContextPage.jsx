@@ -6,23 +6,24 @@ import {
     XCircle, Clock, Wifi, Database, Heart, Thermometer,
     ShieldAlert, Scan, ChevronRight, Copy, Check
 } from "lucide-react";
-import ThemeToggle from "../theme/ThemeToggle";
+import ThemeToggle from "../components/theme/ThemeToggle";
+import PatientHistory from "../components/history/PatientHistory"
 
 // ── Color tokens — use CSS variables so ThemeToggle works ─────────────────
 const C = {
-    bg:        "var(--color-bg)",
-    panel:     "var(--color-surface)",
-    card:      "color-mix(in srgb, var(--color-surface) 60%, var(--color-bg))",
-    border:    "var(--color-border)",
-    accent:    "var(--color-accent)",
+    bg: "var(--color-bg)",
+    panel: "var(--color-surface)",
+    card: "color-mix(in srgb, var(--color-surface) 60%, var(--color-bg))",
+    border: "var(--color-border)",
+    accent: "var(--color-accent)",
     accentDim: "color-mix(in srgb, var(--color-accent) 12%, transparent)",
-    green:     "#22C55E",
-    yellow:    "#EAB308",
-    red:       "#EF4444",
-    cyan:      "#06B6D4",
-    text:      "var(--color-text)",
-    muted:     "var(--color-text-subtle)",
-    dim:       "var(--color-border)",
+    green: "#22C55E",
+    yellow: "#EAB308",
+    red: "#EF4444",
+    cyan: "#06B6D4",
+    text: "var(--color-text)",
+    muted: "var(--color-text-subtle)",
+    dim: "var(--color-border)",
 };
 
 // ── Stream event log entry ──────────────────────────────────────────────────
@@ -703,7 +704,7 @@ export default function PatientContextPage() {
             {/* ── Footer status ── */}
             {status === "done" && ps && (
                 <div style={{
-                    maxWidth: 1400, margin: "0 auto 24px", padding: "0 24px",
+                    maxWidth: 1400, margin: "0 auto 8px", padding: "0 24px",
                     display: "flex", alignItems: "center", gap: 8,
                 }}>
                     <CheckCircle2 size={13} color={C.green} />
@@ -713,6 +714,22 @@ export default function PatientContextPage() {
                     </span>
                 </div>
             )}
+
+            {/* ── History section ── */}
+            <div style={{ maxWidth: 1400, margin: "0 auto 40px", padding: "0 24px" }}>
+                <div style={{
+                    display: "flex", alignItems: "center", gap: 10, marginBottom: 14,
+                    paddingTop: 24, borderTop: `1px solid ${C.border}`,
+                }}>
+                    <div style={{ flex: 1, height: 1, background: C.border }} />
+                    <span style={{
+                        fontSize: 10, fontWeight: 700, letterSpacing: "0.25em",
+                        textTransform: "uppercase", color: C.muted, padding: "0 12px",
+                    }}>Fetch History</span>
+                    <div style={{ flex: 1, height: 1, background: C.border }} />
+                </div>
+                <PatientHistory defaultPatientId={patientId} />
+            </div>
         </div>
     );
 }

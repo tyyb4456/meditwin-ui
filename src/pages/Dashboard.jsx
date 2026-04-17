@@ -39,7 +39,7 @@ function Breadcrumb({ items }) {
         </div>
     );
 }
-import ThemeToggle from "../theme/ThemeToggle";
+import ThemeToggle from "../components/theme/ThemeToggle";
 
 const modes = [
     {
