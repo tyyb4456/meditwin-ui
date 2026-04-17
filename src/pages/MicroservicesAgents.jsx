@@ -309,6 +309,8 @@ export default function MicroservicesAgents() {
                                             navigate("/dashboard/microservices/patient-context");
                                         } else if (agent.id === "diagnosis") {
                                             navigate("/dashboard/microservices/diagnosis-agent");
+                                        } else if (agent.id === "lab-analysis") {
+                                            navigate("/dashboard/microservices/lab-analysis");
                                         }
                                     }}
                                     style={{
@@ -444,7 +446,7 @@ export default function MicroservicesAgents() {
                                                 transition: "opacity 0.25s",
                                             }}>
                                                 <span style={{ fontSize: 10, fontWeight: 700, color: "var(--color-text-subtle)", letterSpacing: "0.08em" }}>
-                                                    {(agent.id === "patient-context" || agent.id === "diagnosis") ? "Explore" : "Coming soon"}
+                                                    {(agent.id === "patient-context" || agent.id === "diagnosis" || agent.id === "lab-analysis") ? "Explore" : "Coming soon"}
                                                 </span>
                                                 <ChevronRight size={10} strokeWidth={2.5} style={{
                                                     color: "var(--color-text-subtle)",
