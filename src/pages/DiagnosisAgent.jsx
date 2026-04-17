@@ -237,6 +237,7 @@ export default function DiagnosisAgent() {
     const [error, setError] = useState(null);
     const [expandedDiagnosis, setExpandedDiagnosis] = useState(null);
     const [liveText, setLiveText] = useState("");
+    const [partialResult, setPartialResult] = useState(null);
     const [copied, setCopied] = useState(false);
 
     const abortControllerRef = useRef(null);
@@ -249,10 +250,45 @@ export default function DiagnosisAgent() {
     }, [streamEvents, isStreaming]);
 
     const handleReset = () => {
-        setStreamEvents([]); setFinalResult(null);
+        setStreamEvents([]); setFinalResult(null); setPartialResult(null);
         setCurrentStep(null); setError(null); setExpandedDiagnosis(null); setLiveText("");
         setCopied(false);
     };
+
+    // Incremental parsing of the JSON structure
+    useEffect(() => {
+        if (!isStreaming || !liveText || finalResult) return;
+        try {
+            const partial = { differential_diagnosis: [] };
+            const blocks = liveText.split(/"rank"\s*:\s*\d+/).slice(1);
+            for (let i = 0; i < blocks.length; i++) {
+                const block = blocks[i];
+                const displayMatch = block.match(/"display"\s*:\s*"([^"]+)"/);
+                const codeMatch = block.match(/"icd10_code"\s*:\s*"([^"]+)"/);
+                const confMatch = block.match(/"confidence"\s*:\s*(0\.\d+)/);
+                if (displayMatch) {
+                    partial.differential_diagnosis.push({
+                        rank: partial.differential_diagnosis.length + 1,
+                        display: displayMatch[1] || "...",
+                        icd10_code: codeMatch ? codeMatch[1] : "...",
+                        confidence: confMatch ? parseFloat(confMatch[1]) : 0,
+                        clinical_reasoning: "Reasoning stream...",
+                        supporting_evidence: [],
+                        against_evidence: []
+                    });
+                }
+            }
+            if (partial.differential_diagnosis.length > 0) {
+                const top = partial.differential_diagnosis[0];
+                partial.top_diagnosis = top.display;
+                partial.top_icd10_code = top.icd10_code;
+                if (top.confidence >= 0.75) partial.confidence_level = "HIGH";
+                else if (top.confidence >= 0.5) partial.confidence_level = "MODERATE";
+                else if (top.confidence > 0) partial.confidence_level = "LOW";
+                setPartialResult(partial);
+            }
+        } catch { /* ignore parsing errors */ }
+    }, [liveText, isStreaming, finalResult]);
 
     const handleCopy = () => {
         const textToCopy = finalResult ? JSON.stringify(finalResult, null, 2) : liveText;
@@ -556,151 +592,158 @@ export default function DiagnosisAgent() {
                         )}
 
                         {/* ── Final Result ── */}
-                        {finalResult && (
-                            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                        {(finalResult || partialResult) && (() => {
+                            const displayResult = finalResult || partialResult;
+                            return (
+                                <div style={{ display: "flex", flexDirection: "column", gap: 12, opacity: finalResult ? 1 : 0.6, transition: "opacity 0.3s" }}>
 
-                                {/* Summary cards */}
-                                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                                    <div style={{ background: C.bg, padding: 14, borderLeft: `4px solid ${C.accent}`, border: `1px solid ${C.border}` }}>
-                                        <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: C.muted, margin: "0 0 6px" }}>Top Diagnosis</p>
-                                        <p style={{ fontSize: 13, fontWeight: 900, color: C.text, margin: 0 }}>{finalResult.top_diagnosis || "N/A"}</p>
-                                        <p style={{ fontSize: 10, color: C.muted, margin: "3px 0 0", fontFamily: "monospace" }}>ICD-10: {finalResult.top_icd10_code || "N/A"}</p>
-                                    </div>
-                                    <div style={{ background: C.bg, padding: 14, borderLeft: `4px solid ${C.cyan}`, border: `1px solid ${C.border}` }}>
-                                        <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: C.muted, margin: "0 0 6px" }}>Confidence</p>
-                                        <p style={{ fontSize: 13, fontWeight: 900, margin: 0, color: finalResult.confidence_level === "HIGH" ? C.green : finalResult.confidence_level === "MODERATE" ? C.yellow : C.red }}>
-                                            {finalResult.confidence_level || "UNKNOWN"}
-                                        </p>
-                                        <div style={{ marginTop: 8, height: 4, background: C.dim, borderRadius: 2, overflow: "hidden" }}>
-                                            <div style={{
-                                                height: "100%", borderRadius: 2, transition: "width 0.5s ease",
-                                                background: finalResult.confidence_level === "HIGH" ? C.green : finalResult.confidence_level === "MODERATE" ? C.yellow : C.red,
-                                                width: finalResult.confidence_level === "HIGH" ? "85%" : finalResult.confidence_level === "MODERATE" ? "60%" : "35%",
-                                            }} />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Clinical alerts */}
-                                {(finalResult.penicillin_allergy_flagged || finalResult.high_suspicion_sepsis || finalResult.requires_isolation) && (
-                                    <div style={{ background: `${C.yellow}10`, border: `1px solid ${C.yellow}40`, padding: 14 }}>
-                                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-                                            <AlertTriangle size={14} color={C.yellow} />
-                                            <p style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.15em", textTransform: "uppercase", color: C.yellow, margin: 0 }}>Clinical Alerts</p>
-                                        </div>
-                                        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                                            {finalResult.penicillin_allergy_flagged && <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: C.text }}><div style={{ width: 6, height: 6, background: C.yellow, borderRadius: "50%" }} />Beta-lactam allergy detected — avoid penicillin-class antibiotics</div>}
-                                            {finalResult.high_suspicion_sepsis && <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: C.text }}><div style={{ width: 6, height: 6, background: C.red, borderRadius: "50%" }} />High suspicion of sepsis — urgent evaluation required</div>}
-                                            {finalResult.requires_isolation && <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: C.text }}><div style={{ width: 6, height: 6, background: C.purple, borderRadius: "50%" }} />Isolation precautions recommended</div>}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Differential diagnosis list */}
-                                <div style={{ border: `1px solid ${C.border}` }}>
-                                    <div style={{ padding: "10px 14px", borderBottom: `1px solid ${C.border}`, background: `color-mix(in srgb, ${C.accent} 6%, ${C.surface})` }}>
-                                        <p style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.15em", textTransform: "uppercase", color: C.text, margin: 0 }}>
-                                            Differential Diagnosis ({finalResult.differential_diagnosis?.length || 0})
-                                        </p>
-                                    </div>
-                                    <div style={{ display: "flex", flexDirection: "column" }}>
-                                        {finalResult.differential_diagnosis?.map((diag, idx) => (
-                                            <div key={idx} style={{ padding: 14, borderBottom: `1px solid ${C.border}` }}>
-                                                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", cursor: "pointer" }}
-                                                    onClick={() => setExpandedDiagnosis(expandedDiagnosis === idx ? null : idx)}>
-                                                    <div style={{ flex: 1 }}>
-                                                        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-                                                            <span style={{ width: 24, height: 24, background: C.accent, color: "#fff", fontSize: 11, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 3, flexShrink: 0 }}>{diag.rank}</span>
-                                                            <p style={{ fontSize: 13, fontWeight: 800, color: C.text, margin: 0 }}>{diag.display}</p>
-                                                            <span style={{ fontSize: 10, color: C.muted, fontFamily: "monospace" }}>{diag.icd10_code}</span>
-                                                        </div>
-                                                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                                                            <TrendingUp size={11} color={C.muted} />
-                                                            <span style={{ fontSize: 11, color: C.muted }}>{(diag.confidence * 100).toFixed(0)}% confidence</span>
-                                                            <div style={{ flex: 1, height: 4, background: C.dim, borderRadius: 2, overflow: "hidden" }}>
-                                                                <div style={{ height: "100%", width: `${diag.confidence * 100}%`, background: C.accent, borderRadius: 2 }} />
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <ChevronDown size={15} color={C.muted} style={{ marginLeft: 10, flexShrink: 0, transform: expandedDiagnosis === idx ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }} />
-                                                </div>
-
-                                                {expandedDiagnosis === idx && (
-                                                    <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${C.border}`, display: "flex", flexDirection: "column", gap: 10 }}>
-                                                        <div>
-                                                            <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: C.muted, margin: "0 0 5px" }}>Clinical Reasoning</p>
-                                                            <p style={{ fontSize: 12, color: C.text, margin: 0, lineHeight: 1.6 }}>{diag.clinical_reasoning}</p>
-                                                        </div>
-                                                        {diag.supporting_evidence?.length > 0 && (
-                                                            <div>
-                                                                <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: C.green, margin: "0 0 5px" }}>Supporting Evidence</p>
-                                                                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                                                                    {diag.supporting_evidence.map((ev, i) => (
-                                                                        <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 6, fontSize: 12, color: C.text }}>
-                                                                            <CheckCircle2 size={12} color={C.green} style={{ flexShrink: 0, marginTop: 1 }} /> {ev}
-                                                                        </div>
-                                                                    ))}
-                                                                </div>
-                                                            </div>
-                                                        )}
-                                                        {diag.against_evidence?.length > 0 && (
-                                                            <div>
-                                                                <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: C.red, margin: "0 0 5px" }}>Against Evidence</p>
-                                                                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                                                                    {diag.against_evidence.map((ev, i) => (
-                                                                        <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 6, fontSize: 12, color: C.text }}>
-                                                                            <X size={12} color={C.red} style={{ flexShrink: 0, marginTop: 1 }} /> {ev}
-                                                                        </div>
-                                                                    ))}
-                                                                </div>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                )}
+                                    {/* Summary cards */}
+                                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                                        <div style={{ background: C.bg, padding: 14, borderLeft: `4px solid ${C.accent}`, border: `1px solid ${C.border}` }}>
+                                            <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: C.muted, margin: "0 0 6px" }}>Top Diagnosis</p>
+                                            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                                {!finalResult && <Loader2 size={12} color={C.accent} style={{ animation: "spin 2s linear infinite" }} />}
+                                                <p style={{ fontSize: 13, fontWeight: 900, color: C.text, margin: 0 }}>{displayResult.top_diagnosis || "N/A"}</p>
                                             </div>
-                                        ))}
+                                            <p style={{ fontSize: 10, color: C.muted, margin: "3px 0 0", fontFamily: "monospace" }}>ICD-10: {displayResult.top_icd10_code || "N/A"}</p>
+                                        </div>
+                                        <div style={{ background: C.bg, padding: 14, borderLeft: `4px solid ${C.cyan}`, border: `1px solid ${C.border}` }}>
+                                            <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: C.muted, margin: "0 0 6px" }}>Confidence</p>
+                                            <p style={{ fontSize: 13, fontWeight: 900, margin: 0, color: displayResult.confidence_level === "HIGH" ? C.green : displayResult.confidence_level === "MODERATE" ? C.yellow : C.red }}>
+                                                {displayResult.confidence_level || "CALCULATING"}
+                                            </p>
+                                            <div style={{ marginTop: 8, height: 4, background: C.dim, borderRadius: 2, overflow: "hidden" }}>
+                                                <div style={{
+                                                    height: "100%", borderRadius: 2, transition: "width 0.5s ease",
+                                                    background: displayResult.confidence_level === "HIGH" ? C.green : displayResult.confidence_level === "MODERATE" ? C.yellow : C.red,
+                                                    width: displayResult.confidence_level === "HIGH" ? "85%" : displayResult.confidence_level === "MODERATE" ? "60%" : displayResult.confidence_level === "LOW" ? "35%" : "10%",
+                                                }} />
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
 
-                                {/* Recommended next steps */}
-                                {finalResult.recommended_next_steps?.length > 0 && (
+                                    {/* Clinical alerts */}
+                                    {(displayResult.penicillin_allergy_flagged || displayResult.high_suspicion_sepsis || displayResult.requires_isolation) && (
+                                        <div style={{ background: `${C.yellow}10`, border: `1px solid ${C.yellow}40`, padding: 14 }}>
+                                            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                                                <AlertTriangle size={14} color={C.yellow} />
+                                                <p style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.15em", textTransform: "uppercase", color: C.yellow, margin: 0 }}>Clinical Alerts</p>
+                                            </div>
+                                            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                                                {displayResult.penicillin_allergy_flagged && <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: C.text }}><div style={{ width: 6, height: 6, background: C.yellow, borderRadius: "50%" }} />Beta-lactam allergy detected — avoid penicillin-class antibiotics</div>}
+                                                {displayResult.high_suspicion_sepsis && <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: C.text }}><div style={{ width: 6, height: 6, background: C.red, borderRadius: "50%" }} />High suspicion of sepsis — urgent evaluation required</div>}
+                                                {displayResult.requires_isolation && <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: C.text }}><div style={{ width: 6, height: 6, background: C.purple, borderRadius: "50%" }} />Isolation precautions recommended</div>}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Differential diagnosis list */}
                                     <div style={{ border: `1px solid ${C.border}` }}>
                                         <div style={{ padding: "10px 14px", borderBottom: `1px solid ${C.border}`, background: `color-mix(in srgb, ${C.accent} 6%, ${C.surface})` }}>
                                             <p style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.15em", textTransform: "uppercase", color: C.text, margin: 0 }}>
-                                                Recommended Next Steps ({finalResult.recommended_next_steps.length})
+                                                Differential Diagnosis ({displayResult.differential_diagnosis?.length || 0})
+                                                {!finalResult && <Loader2 size={10} color={C.text} style={{ animation: "spin 2s linear infinite", display: "inline-block", marginLeft: 8 }} />}
                                             </p>
                                         </div>
-                                        <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
-                                            {finalResult.recommended_next_steps.map((step, idx) => (
-                                                <div key={idx} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: 12, background: C.bg, borderLeft: `4px solid ${C.cyan}`, border: `1px solid ${C.border}` }}>
-                                                    <div style={{ width: 30, height: 30, background: `${C.cyan}18`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, borderRadius: 3 }}>
-                                                        {step.category === "MEDICATION" ? <Pill size={13} color={C.cyan} /> : step.category === "LABORATORY" ? <Activity size={13} color={C.cyan} /> : <Clock size={13} color={C.cyan} />}
-                                                    </div>
-                                                    <div style={{ flex: 1 }}>
-                                                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
-                                                            <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", padding: "2px 6px", background: `${C.cyan}18`, color: C.cyan }}>{step.category}</span>
-                                                            {step.urgency !== "routine" && <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", padding: "2px 6px", background: `${C.red}18`, color: C.red }}>{step.urgency}</span>}
+                                        <div style={{ display: "flex", flexDirection: "column" }}>
+                                            {displayResult.differential_diagnosis?.map((diag, idx) => (
+                                                <div key={idx} style={{ padding: 14, borderBottom: `1px solid ${C.border}` }}>
+                                                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", cursor: "pointer" }}
+                                                        onClick={() => setExpandedDiagnosis(expandedDiagnosis === idx ? null : idx)}>
+                                                        <div style={{ flex: 1 }}>
+                                                            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+                                                                <span style={{ width: 24, height: 24, background: C.accent, color: "#fff", fontSize: 11, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 3, flexShrink: 0 }}>{diag.rank}</span>
+                                                                <p style={{ fontSize: 13, fontWeight: 800, color: C.text, margin: 0 }}>{diag.display}</p>
+                                                                <span style={{ fontSize: 10, color: C.muted, fontFamily: "monospace" }}>{diag.icd10_code}</span>
+                                                            </div>
+                                                            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                                                <TrendingUp size={11} color={C.muted} />
+                                                                <span style={{ fontSize: 11, color: C.muted }}>{(diag.confidence * 100).toFixed(0)}% confidence</span>
+                                                                <div style={{ flex: 1, height: 4, background: C.dim, borderRadius: 2, overflow: "hidden" }}>
+                                                                    <div style={{ height: "100%", width: `${diag.confidence * 100}%`, background: C.accent, borderRadius: 2 }} />
+                                                                </div>
+                                                            </div>
                                                         </div>
-                                                        <p style={{ fontSize: 12, fontWeight: 700, color: C.text, margin: 0 }}>{step.description}</p>
-                                                        {step.drug_name && <p style={{ fontSize: 11, color: C.muted, margin: "3px 0 0" }}>{step.drug_name} {step.drug_dose} {step.drug_route && `(${step.drug_route})`}</p>}
-                                                        {step.rationale && <p style={{ fontSize: 11, color: C.muted, margin: "3px 0 0", fontStyle: "italic" }}>{step.rationale}</p>}
+                                                        <ChevronDown size={15} color={C.muted} style={{ marginLeft: 10, flexShrink: 0, transform: expandedDiagnosis === idx ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }} />
                                                     </div>
+
+                                                    {expandedDiagnosis === idx && (
+                                                        <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${C.border}`, display: "flex", flexDirection: "column", gap: 10 }}>
+                                                            <div>
+                                                                <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: C.muted, margin: "0 0 5px" }}>Clinical Reasoning</p>
+                                                                <p style={{ fontSize: 12, color: C.text, margin: 0, lineHeight: 1.6 }}>{diag.clinical_reasoning}</p>
+                                                            </div>
+                                                            {diag.supporting_evidence?.length > 0 && (
+                                                                <div>
+                                                                    <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: C.green, margin: "0 0 5px" }}>Supporting Evidence</p>
+                                                                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                                                                        {diag.supporting_evidence.map((ev, i) => (
+                                                                            <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 6, fontSize: 12, color: C.text }}>
+                                                                                <CheckCircle2 size={12} color={C.green} style={{ flexShrink: 0, marginTop: 1 }} /> {ev}
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                            {diag.against_evidence?.length > 0 && (
+                                                                <div>
+                                                                    <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: C.red, margin: "0 0 5px" }}>Against Evidence</p>
+                                                                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                                                                        {diag.against_evidence.map((ev, i) => (
+                                                                            <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 6, fontSize: 12, color: C.text }}>
+                                                                                <X size={12} color={C.red} style={{ flexShrink: 0, marginTop: 1 }} /> {ev}
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             ))}
                                         </div>
                                     </div>
-                                )}
 
-                                {/* Reasoning summary */}
-                                {finalResult.reasoning_summary && (
-                                    <div style={{ background: C.bg, border: `1px solid ${C.border}`, padding: 14 }}>
-                                        <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: C.muted, margin: "0 0 8px" }}>AI Reasoning Summary</p>
-                                        <p style={{ fontSize: 13, color: C.text, margin: 0, lineHeight: 1.65 }}>{finalResult.reasoning_summary}</p>
-                                    </div>
-                                )}
-                            </div>
-                        )}
+                                    {/* Recommended next steps */}
+                                    {displayResult.recommended_next_steps?.length > 0 && (
+                                        <div style={{ border: `1px solid ${C.border}` }}>
+                                            <div style={{ padding: "10px 14px", borderBottom: `1px solid ${C.border}`, background: `color-mix(in srgb, ${C.accent} 6%, ${C.surface})` }}>
+                                                <p style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.15em", textTransform: "uppercase", color: C.text, margin: 0 }}>
+                                                    Recommended Next Steps ({displayResult.recommended_next_steps.length})
+                                                </p>
+                                            </div>
+                                            <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+                                                {displayResult.recommended_next_steps.map((step, idx) => (
+                                                    <div key={idx} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: 12, background: C.bg, borderLeft: `4px solid ${C.cyan}`, border: `1px solid ${C.border}` }}>
+                                                        <div style={{ width: 30, height: 30, background: `${C.cyan}18`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, borderRadius: 3 }}>
+                                                            {step.category === "MEDICATION" ? <Pill size={13} color={C.cyan} /> : step.category === "LABORATORY" ? <Activity size={13} color={C.cyan} /> : <Clock size={13} color={C.cyan} />}
+                                                        </div>
+                                                        <div style={{ flex: 1 }}>
+                                                            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                                                                <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", padding: "2px 6px", background: `${C.cyan}18`, color: C.cyan }}>{step.category}</span>
+                                                                {step.urgency !== "routine" && <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", padding: "2px 6px", background: `${C.red}18`, color: C.red }}>{step.urgency}</span>}
+                                                            </div>
+                                                            <p style={{ fontSize: 12, fontWeight: 700, color: C.text, margin: 0 }}>{step.description}</p>
+                                                            {step.drug_name && <p style={{ fontSize: 11, color: C.muted, margin: "3px 0 0" }}>{step.drug_name} {step.drug_dose} {step.drug_route && `(${step.drug_route})`}</p>}
+                                                            {step.rationale && <p style={{ fontSize: 11, color: C.muted, margin: "3px 0 0", fontStyle: "italic" }}>{step.rationale}</p>}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
 
+                                    {/* Reasoning summary */}
+                                    {finalResult?.reasoning_summary && (
+                                        <div style={{ background: C.bg, border: `1px solid ${C.border}`, padding: 14 }}>
+                                            <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: C.muted, margin: "0 0 8px" }}>AI Reasoning Summary</p>
+                                            <p style={{ fontSize: 13, color: C.text, margin: 0, lineHeight: 1.65 }}>{finalResult.reasoning_summary}</p>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })()}
+                        
                         {/* Empty state */}
                         {!isStreaming && streamEvents.length === 0 && (
                             <div style={{ padding: "48px 0", textAlign: "center" }}>
