@@ -91,6 +91,8 @@ export default function Dashboard() {
     const handleModeClick = (modeId) => {
         if (modeId === "microservices") {
             navigate("/dashboard/microservices");
+        } else if (modeId === "orchestrator") {
+            navigate("/dashboard/orchestrator");
         } else {
             setSelectedMode(modeId);
         }
