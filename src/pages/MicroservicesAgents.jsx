@@ -313,6 +313,8 @@ export default function MicroservicesAgents() {
                                             navigate("/dashboard/microservices/lab-analysis");
                                         } else if (agent.id === "drug-safety") {
                                             navigate("/dashboard/microservices/drug-safety");
+                                        } else if (agent.id === "imaging-triage") {
+                                            navigate("/dashboard/microservices/imaging-triage");
                                         }
                                     }}
                                     style={{
@@ -448,7 +450,7 @@ export default function MicroservicesAgents() {
                                                 transition: "opacity 0.25s",
                                             }}>
                                                 <span style={{ fontSize: 10, fontWeight: 700, color: "var(--color-text-subtle)", letterSpacing: "0.08em" }}>
-                                                    {(agent.id === "patient-context" || agent.id === "diagnosis" || agent.id === "lab-analysis" || agent.id === "drug-safety") ? "Explore" : "Coming soon"}
+                                                    {(agent.id === "patient-context" || agent.id === "diagnosis" || agent.id === "lab-analysis" || agent.id === "drug-safety" || agent.id === "imaging-triage") ? "Explore" : "Coming soon"}
                                                 </span>
                                                 <ChevronRight size={10} strokeWidth={2.5} style={{
                                                     color: "var(--color-text-subtle)",
