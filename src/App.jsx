@@ -8,6 +8,7 @@ import LabAnalysisAgent from "./pages/LabAnalysisAgent"
 import DrugSafetyAgent from "./pages/DrugSafetyAgent"
 import OrchestratorPage from "./pages/OrchestratorPage"
 import ImagingTriageAgent from "./pages/ImagingTriageAgent"
+import DigitalTwinAgent from "./pages/DigitalTwinAgent"
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
       <Route path="/dashboard/microservices/lab-analysis" element={<LabAnalysisAgent />} />
       <Route path="/dashboard/microservices/drug-safety" element={<DrugSafetyAgent />} />
       <Route path="/dashboard/microservices/imaging-triage" element={<ImagingTriageAgent />} />
+      <Route path="/dashboard/microservices/digital-twin" element={<DigitalTwinAgent />} />
       <Route path="/dashboard/orchestrator" element={<OrchestratorPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
