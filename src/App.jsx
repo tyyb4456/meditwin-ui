@@ -9,6 +9,7 @@ import DrugSafetyAgent from "./pages/DrugSafetyAgent"
 import OrchestratorPage from "./pages/OrchestratorPage"
 import ImagingTriageAgent from "./pages/ImagingTriageAgent"
 import DigitalTwinAgent from "./pages/DigitalTwinAgent"
+import ConversationalChatbot from "./pages/ConversationalChatbot"
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
       <Route path="/dashboard/microservices/drug-safety" element={<DrugSafetyAgent />} />
       <Route path="/dashboard/microservices/imaging-triage" element={<ImagingTriageAgent />} />
       <Route path="/dashboard/microservices/digital-twin" element={<DigitalTwinAgent />} />
+      <Route path="/dashboard/chatbot" element={<ConversationalChatbot />} />
       <Route path="/dashboard/orchestrator" element={<OrchestratorPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

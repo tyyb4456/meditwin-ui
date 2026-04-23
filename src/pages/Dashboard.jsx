@@ -93,6 +93,8 @@ export default function Dashboard() {
             navigate("/dashboard/microservices");
         } else if (modeId === "orchestrator") {
             navigate("/dashboard/orchestrator");
+        } else if (modeId === "chatbot") {
+            navigate("/dashboard/chatbot");
         } else {
             setSelectedMode(modeId);
         }
