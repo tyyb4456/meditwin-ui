@@ -1,7 +1,8 @@
 import { useState } from "react";
 import {
     Search, Trash2, Database, AlertTriangle, ChevronDown, ChevronRight,
-    Loader2, FileText, BookOpen, ShieldAlert, CheckCircle2, AlertCircle
+    Loader2, FileText, BookOpen, ShieldAlert, CheckCircle2, AlertCircle,
+    Copy, Check
 } from "lucide-react";
 
 const C = {
@@ -34,6 +35,38 @@ const Label = ({ children }) => (
         {children}
     </p>
 );
+
+function RecordJsonPanel({ record }) {
+    const [copied, setCopied] = useState(false);
+    const text = JSON.stringify(record, null, 2);
+    const handleCopy = () => {
+        navigator.clipboard.writeText(text);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
+    return (
+        <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                <Label>Raw JSON</Label>
+                <button onClick={handleCopy} style={{
+                    background: "none", border: `1px solid ${C.border}`, color: C.muted,
+                    padding: "2px 7px", cursor: "pointer", display: "flex", alignItems: "center",
+                    gap: 4, fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase",
+                }}>
+                    {copied ? <><Check size={9} color={C.green} /> Copied</> : <><Copy size={9} /> Copy</>}
+                </button>
+            </div>
+            <div style={{
+                flex: 1, overflow: "auto", background: C.bg,
+                border: `1px solid ${C.border}`, padding: "10px 12px",
+                fontFamily: "monospace", fontSize: 10, lineHeight: 1.6, color: C.muted,
+                maxHeight: 420,
+            }}>
+                <pre style={{ margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-all" }}>{text}</pre>
+            </div>
+        </div>
+    );
+}
 
 function HistoryRecordCard({ record }) {
     const [expanded, setExpanded] = useState(false);
@@ -92,7 +125,7 @@ function HistoryRecordCard({ record }) {
 
             {/* Expanded */}
             {expanded && (
-                <div style={{ borderTop: `1px solid ${C.border}`, padding: 16, background: C.bg, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
+                <div style={{ borderTop: `1px solid ${C.border}`, padding: 16, background: C.bg, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 24 }}>
 
                     {/* Left */}
                     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -191,6 +224,11 @@ function HistoryRecordCard({ record }) {
                             </div>
                         )}
                     </div>
+
+                    {/* Raw JSON */}
+                    <div>
+                        <RecordJsonPanel record={record} />
+                    </div>
                 </div>
             )}
         </div>
@@ -206,11 +244,11 @@ export default function ExplanationHistory({ defaultPatientId = "" }) {
     const [data, setData] = useState(null);
 
     const ENDPOINTS = [
-        { id: "get",     path: "/history/{id}",         label: "All Records",   method: "GET" },
-        { id: "latest",  path: "/history/{id}/latest",  label: "Latest Record", method: "GET" },
-        { id: "request", path: "/history/request/{id}", label: "By Request",    method: "GET" },
-        { id: "stats",   path: "/history/stats/{id}",   label: "Stats",         method: "GET" },
-        { id: "delete",  path: "/history/{id}",         label: "Delete All",    method: "DELETE" },
+        { id: "get", path: "/history/{id}", label: "All Records", method: "GET" },
+        { id: "latest", path: "/history/{id}/latest", label: "Latest Record", method: "GET" },
+        { id: "request", path: "/history/request/{id}", label: "By Request", method: "GET" },
+        { id: "stats", path: "/history/stats/{id}", label: "Stats", method: "GET" },
+        { id: "delete", path: "/history/{id}", label: "Delete All", method: "DELETE" },
     ];
 
     const runQuery = async () => {
@@ -286,13 +324,20 @@ export default function ExplanationHistory({ defaultPatientId = "" }) {
                         onClick={runQuery}
                         disabled={loading}
                         style={{
-                            height: 40, padding: "0 24px", background: C.accent, border: "none", color: "#fff",
-                            fontSize: 12, fontWeight: 800, letterSpacing: "0.1em", cursor: loading ? "not-allowed" : "pointer",
-                            display: "flex", alignItems: "center", gap: 8, opacity: loading ? 0.8 : 1
+                            height: 40, padding: "0 24px",
+                            background: loading ? "#4b5563" : C.accent,  // gray when loading
+                            border: "none", color: "#fff",
+                            fontSize: 12, fontWeight: 800, letterSpacing: "0.1em",
+                            cursor: loading ? "not-allowed" : "pointer",
+                            display: "flex", alignItems: "center", gap: 8,
+                            opacity: 1,
+                            transition: "background 0.2s",
                         }}
                     >
-                        {loading ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> : <Search size={14} />}
-                        QUERY
+                        {loading
+                            ? <><Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> LOADING...</>
+                            : <><Search size={14} /> QUERY</>
+                        }
                     </button>
                 </div>
             </div>

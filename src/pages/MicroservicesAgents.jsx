@@ -2,9 +2,10 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
     ArrowLeft, ChevronRight, UserCheck, Brain, FlaskConical,
-    Shield, Eye, GitBranch, Scale, FileText, Cpu, Zap
+    Shield, Eye, GitBranch, FileText, Cpu, Zap
 } from "lucide-react";
 import ThemeToggle from "../components/theme/ThemeToggle";
+import ExplanationHistory from "../components/history/ExplanationHistory";
 
 const agents = [
     {
@@ -86,33 +87,21 @@ const agents = [
         icon: GitBranch,
         accentHue: "217",
     },
-    {
-        id: "consensus",
-        number: "07",
-        port: 8007,
-        title: "Consensus + Escalation Agent",
-        type: "A2A · LangGraph",
-        typeBadgeColor: "#ec4899",
-        role: "Conflict Arbitration",
-        description: "Reviews all agent outputs for disagreements, runs tiebreaker logic, and escalates to human review when conflicts are unresolvable.",
-        capabilities: ["Cross-agent conflict detection", "Tiebreaker resolution", "Human escalation flag"],
-        icon: Scale,
-        accentHue: "330",
-    },
-    {
-        id: "explanation",
-        number: "08",
-        port: 8008,
-        title: "Explanation Agent",
-        type: "A2A",
-        typeBadgeColor: "#f97316",
-        role: "Final Output",
-        description: "Assembles the complete clinical output: SOAP note for clinicians, plain-language summary for patients, and a full FHIR Bundle.",
-        capabilities: ["SOAP note generation", "Patient-friendly summary (Grade 6)", "FHIR Bundle assembly"],
-        icon: FileText,
-        accentHue: "25",
-    },
 ];
+
+const explanationAgent = {
+    id: "explanation",
+    number: "07",
+    port: 8008,
+    title: "Explanation Agent",
+    type: "A2A",
+    typeBadgeColor: "#f97316",
+    role: "Final Output",
+    description: "Assembles the complete clinical output: SOAP note for clinicians, plain-language summary for patients, and a full FHIR Bundle.",
+    capabilities: ["SOAP note generation", "Patient-friendly summary (Grade 6)", "FHIR Bundle assembly"],
+    icon: FileText,
+    accentHue: "25",
+};
 
 // ── Breadcrumb nav ─────────────────────────────────────────────────────────────
 function Breadcrumb({ items }) {
@@ -156,6 +145,7 @@ export default function MicroservicesAgents() {
     const navigate = useNavigate();
     const [hoveredAgent, setHoveredAgent] = useState(null);
     const [visible, setVisible] = useState(false);
+    const [selectedAgent, setSelectedAgent] = useState(null);
 
     useEffect(() => {
         const t = setTimeout(() => setVisible(true), 80);
@@ -221,7 +211,7 @@ export default function MicroservicesAgents() {
                     }}>
                         <Cpu size={10} style={{ color: "var(--color-accent)" }} />
                         <span style={{ color: "var(--color-text-subtle)", fontSize: 10, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase" }}>
-                            8 Agents
+                            7 Agents
                         </span>
                     </div>
                     <ThemeToggle />
@@ -278,17 +268,17 @@ export default function MicroservicesAgents() {
                             color: "var(--color-text)",
                             marginBottom: 16,
                         }}>
-                            Eight<br />
+                            Six<br />
                             <span style={{ color: "transparent", WebkitTextStroke: "2px var(--color-text)" }}>Specialists</span>
                         </h1>
 
                         <p style={{ color: "var(--color-text-muted)", fontSize: 14, lineHeight: 1.65, maxWidth: 520 }}>
-                            Each agent operates as an independent microservice on its own port (8001–8008).
-                            Click any agent card to inspect its API, capabilities, and live status — coming soon.
+                            Each agent operates as an independent microservice on its own port (8001–8006).
+                            Click any agent card to inspect its API, capabilities, and live status.
                         </p>
                     </div>
 
-                    {/* ── AGENT GRID ── */}
+                    {/* ── AGENT GRID (6 specialists) ── */}
                     <div style={{
                         display: "grid",
                         gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
@@ -452,7 +442,7 @@ export default function MicroservicesAgents() {
                                                 transition: "opacity 0.25s",
                                             }}>
                                                 <span style={{ fontSize: 10, fontWeight: 700, color: "var(--color-text-subtle)", letterSpacing: "0.08em" }}>
-                                                    {(agent.id === "patient-context" || agent.id === "diagnosis" || agent.id === "lab-analysis" || agent.id === "drug-safety" || agent.id === "imaging-triage" || agent.id === "digital-twin") ? "Explore" : "Coming soon"}
+                                                    Explore
                                                 </span>
                                                 <ChevronRight size={10} strokeWidth={2.5} style={{
                                                     color: "var(--color-text-subtle)",
@@ -467,7 +457,153 @@ export default function MicroservicesAgents() {
                         })}
                     </div>
 
-                    {/* ── BOTTOM INFO STRIP ── */}
+                    {/* ── DIVIDER: FINAL OUTPUT ── */}
+                    <div style={{
+                        display: "flex", alignItems: "center", gap: 16,
+                        marginBottom: 20,
+                    }}>
+                        <div style={{ flex: 1, height: 1, background: "var(--color-border)" }} />
+                        <div style={{
+                            display: "flex", alignItems: "center", gap: 8,
+                            padding: "4px 14px",
+                            border: "1px solid hsl(25, 38%, 50%)",
+                            background: "hsl(25 38% 50% / 0.06)",
+                        }}>
+                            <FileText size={10} style={{ color: "hsl(25, 38%, 55%)" }} />
+                            <span style={{
+                                fontSize: 9, fontWeight: 900, letterSpacing: "0.2em",
+                                textTransform: "uppercase", color: "hsl(25, 38%, 55%)",
+                            }}>
+                                Final Output
+                            </span>
+                        </div>
+                        <div style={{ flex: 1, height: 1, background: "var(--color-border)" }} />
+                    </div>
+
+                    {/* ── EXPLANATION AGENT — STANDALONE WIDE CARD ── */}
+                    {(() => {
+                        const agent = explanationAgent;
+                        const IconComponent = agent.icon;
+                        const isHovered = hoveredAgent === agent.id;
+                        const isOpen = selectedAgent === "explanation";
+                        return (
+                            <div style={{ marginBottom: 32 }}>
+                                <button
+                                    onMouseEnter={() => setHoveredAgent(agent.id)}
+                                    onMouseLeave={() => setHoveredAgent(null)}
+                                    onClick={() => setSelectedAgent(isOpen ? null : "explanation")}
+                                    style={{
+                                        width: "100%", textAlign: "left",
+                                        position: "relative",
+                                        background: "var(--color-surface)",
+                                        borderTop: `1px solid ${isOpen ? "hsl(25, 38%, 50%)" : isHovered ? "var(--color-text-subtle)" : "var(--color-border)"}`,
+                                        borderRight: `1px solid ${isOpen ? "hsl(25, 38%, 50%)" : isHovered ? "var(--color-text-subtle)" : "var(--color-border)"}`,
+                                        borderBottom: `1px solid ${isOpen ? "hsl(25, 38%, 50%)" : isHovered ? "var(--color-text-subtle)" : "var(--color-border)"}`,
+                                        borderLeft: `3px solid hsl(25, 38%, 50%)`,
+                                        borderRadius: 0,
+                                        cursor: "pointer", padding: 0,
+                                        transition: "all 0.25s cubic-bezier(0.4,0,0.2,1)",
+                                        boxShadow: isHovered || isOpen ? "0 12px 40px rgba(0,0,0,0.14)" : "none",
+                                        overflow: "hidden",
+                                        opacity: visible ? 1 : 0,
+                                        transitionDelay: "0.35s",
+                                    }}
+                                >
+                                    <div style={{ padding: "20px 28px", display: "flex", alignItems: "center", gap: 28 }}>
+
+                                        {/* Left: number + icon */}
+                                        <div style={{ display: "flex", alignItems: "center", gap: 14, flexShrink: 0 }}>
+                                            <span style={{
+                                                fontSize: 10, fontWeight: 900, letterSpacing: "0.14em",
+                                                color: "var(--color-text-subtle)", fontVariantNumeric: "tabular-nums",
+                                            }}>
+                                                {agent.number}
+                                            </span>
+                                            <div style={{
+                                                width: 42, height: 42, borderRadius: 4, flexShrink: 0,
+                                                display: "flex", alignItems: "center", justifyContent: "center",
+                                                transition: "background 0.25s",
+                                                background: isHovered || isOpen
+                                                    ? `hsl(${agent.accentHue} 35% 50% / 0.18)`
+                                                    : `hsl(${agent.accentHue} 35% 50% / 0.09)`,
+                                            }}>
+                                                <IconComponent size={20} strokeWidth={1.8} style={{ color: `hsl(${agent.accentHue}, 35%, 55%)` }} />
+                                            </div>
+                                        </div>
+
+                                        {/* Middle: title + description */}
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+                                                <h3 style={{ fontSize: 15, fontWeight: 800, margin: 0, color: "var(--color-text)" }}>
+                                                    {agent.title}
+                                                </h3>
+                                                <span style={{
+                                                    fontSize: 9, fontWeight: 700, letterSpacing: "0.12em",
+                                                    textTransform: "uppercase", color: "var(--color-text-subtle)",
+                                                    padding: "2px 7px", border: "1px solid var(--color-border)",
+                                                }}>
+                                                    {agent.type}
+                                                </span>
+                                                <span style={{
+                                                    fontSize: 8, fontWeight: 700, letterSpacing: "0.1em",
+                                                    color: "var(--color-text-subtle)",
+                                                }}>
+                                                    :{agent.port}
+                                                </span>
+                                            </div>
+                                            <p style={{ fontSize: 12, color: "var(--color-text-muted)", margin: 0, lineHeight: 1.6 }}>
+                                                {agent.description}
+                                            </p>
+                                        </div>
+
+                                        {/* Right: capabilities + cta */}
+                                        <div style={{ display: "flex", alignItems: "center", gap: 24, flexShrink: 0 }}>
+                                            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                                                {agent.capabilities.map(cap => (
+                                                    <div key={cap} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                                        <div style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--color-text-subtle)", flexShrink: 0 }} />
+                                                        <span style={{ fontSize: 11, color: "var(--color-text-subtle)" }}>{cap}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+
+                                            <div style={{
+                                                display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
+                                                paddingLeft: 24, borderLeft: "1px solid var(--color-border)",
+                                            }}>
+                                                <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                                                    <div style={{
+                                                        width: 6, height: 6, borderRadius: "50%",
+                                                        background: "#10b981",
+                                                        boxShadow: "0 0 6px rgba(16,185,129,0.6)",
+                                                        animation: "pulse 2s infinite",
+                                                    }} />
+                                                    <span style={{ fontSize: 10, color: "var(--color-text-subtle)", fontWeight: 600, letterSpacing: "0.08em" }}>ready</span>
+                                                </div>
+                                                <div style={{ display: "flex", alignItems: "center", gap: 4, opacity: isHovered || isOpen ? 1 : 0.4, transition: "opacity 0.25s" }}>
+                                                    <span style={{ fontSize: 10, fontWeight: 700, color: isOpen ? "hsl(25, 38%, 55%)" : "var(--color-text-subtle)", letterSpacing: "0.08em" }}>
+                                                        {isOpen ? "Close" : "History"}
+                                                    </span>
+                                                    <ChevronRight size={10} strokeWidth={2.5} style={{
+                                                        color: isOpen ? "hsl(25, 38%, 55%)" : "var(--color-text-subtle)",
+                                                        transform: isOpen ? "rotate(90deg)" : isHovered ? "translateX(3px)" : "translateX(0)",
+                                                        transition: "transform 0.25s",
+                                                    }} />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </button>
+
+                                {/* ── EXPLANATION HISTORY PANEL ── */}
+                                {isOpen && (
+                                    <div style={{ animation: "fadeSlideIn 0.3s cubic-bezier(0.22,1,0.36,1)" }}>
+                                        <ExplanationHistory />
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })()}
                     <div style={{
                         padding: "16px 24px",
                         background: "var(--color-surface)",
@@ -488,11 +624,19 @@ export default function MicroservicesAgents() {
             </div>
 
             <style>{`
-                @keyframes pulse {
-                    0%, 100% { opacity: 1; }
-                    50% { opacity: 0.3; }
-                }
-            `}</style>
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.3; }
+    }
+    @keyframes fadeSlideIn {
+        from { opacity: 0; transform: translateY(12px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to   { transform: rotate(360deg); }
+    }
+`}</style>
         </div>
     );
 }

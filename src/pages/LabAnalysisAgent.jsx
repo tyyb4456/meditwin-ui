@@ -7,6 +7,7 @@ import {
     Wifi, Copy, Check, Plus, Trash2,
 } from "lucide-react";
 import ThemeToggle from "../components/theme/ThemeToggle";
+import LabHistory from "../components/history/LabHistory";
 
 // ── CSS variable colour tokens (theme-aware) ─────────────────────────────────
 const C = {
@@ -1023,6 +1024,22 @@ export default function LabAnalysisAgent() {
                         )}
                     </div>
                 </div>
+            </div>
+
+            {/* ── History section ── */}
+            <div style={{ maxWidth: 1400, margin: "0 auto 40px", padding: "0 24px" }}>
+                <div style={{
+                    display: "flex", alignItems: "center", gap: 10, marginBottom: 14,
+                    paddingTop: 24, borderTop: `1px solid ${C.border}`,
+                }}>
+                    <div style={{ flex: 1, height: 1, background: C.border }} />
+                    <span style={{
+                        fontSize: 10, fontWeight: 700, letterSpacing: "0.25em",
+                        textTransform: "uppercase", color: C.muted, padding: "0 12px",
+                    }}>Fetch History</span>
+                    <div style={{ flex: 1, height: 1, background: C.border }} />
+                </div>
+                <LabHistory defaultPatientId={inputMode === "form" ? "test_1" : ""} />
             </div>
         </div>
     );

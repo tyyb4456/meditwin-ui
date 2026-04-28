@@ -8,18 +8,18 @@ import {
 } from "lucide-react";
 
 const C = {
-    bg: "#0D0D12",
-    panel: "#13131A",
-    card: "#1A1A24",
-    border: "#2A2A3A",
-    accent: "#7C6FE0",
+    bg: "var(--color-bg)",
+    panel: "var(--color-surface)",
+    card: "color-mix(in srgb, var(--color-surface) 60%, var(--color-bg))",
+    border: "var(--color-border)",
+    accent: "var(--color-accent)",
     green: "#22C55E",
     yellow: "#EAB308",
     red: "#EF4444",
     cyan: "#06B6D4",
-    text: "#E8E8F0",
-    muted: "#6B6B80",
-    dim: "#3A3A50",
+    text: "var(--color-text)",
+    muted: "var(--color-text-subtle)",
+    dim: "var(--color-border)",
 };
 
 // ── Tiny helpers ────────────────────────────────────────────────────────────
@@ -107,9 +107,9 @@ function RecordJsonPanel({ record }) {
                 </button>
             </div>
             <div style={{
-                flex: 1, overflow: "auto", background: "#080810",
+                flex: 1, overflow: "auto", background: "var(--color-bg)",
                 border: `1px solid ${C.border}`, padding: "10px 12px",
-                fontFamily: "monospace", fontSize: 10, lineHeight: 1.6, color: "#9D9DB8",
+                fontFamily: "monospace", fontSize: 10, lineHeight: 1.6, color: "var(--color-text-subtle)",
                 maxHeight: 420,
             }}>
                 <pre style={{ margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-all" }}>
