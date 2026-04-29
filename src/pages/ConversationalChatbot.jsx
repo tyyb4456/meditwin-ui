@@ -211,7 +211,7 @@ export default function ConversationalChatbot() {
               setMessages(prev => prev.map(m => {
                 if (m.id !== assistantId) return m;
                 // Remove the start event for this tool, and add the complete event
-                const filteredEvents = (m.toolEvents || []).filter(e => 
+                const filteredEvents = (m.toolEvents || []).filter(e =>
                   !(e.type === "tool_start" && e.tool === evt.tool)
                 );
                 return { ...m, toolEvents: [...filteredEvents, evt] };

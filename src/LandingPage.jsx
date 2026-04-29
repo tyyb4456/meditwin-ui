@@ -57,7 +57,7 @@ const agents = [
   { id: 5, name: "Imaging Triage", icon: Scan, desc: "CNN-based chest X-ray analysis", tag: "A2A", input: "Chest X-ray DICOM/JPEG attachment", output: "Pathology classification + confidence", tech: "TensorFlow / Keras CNN", note: "Activates conditionally — only fires if imaging is attached to the patient record." },
   { id: 6, name: "Digital Twin", icon: BarChart2, desc: "XGBoost outcome simulation & what-if", tag: "A2A", input: "Patient features + proposed treatments", output: "3 scenario outcome distributions", tech: "XGBoost risk model", note: "Simulates three treatment paths and returns probability distributions per scenario." },
   { id: 7, name: "Consensus", icon: Scale, desc: "Conflict detection & arbitration", tag: "A2A", input: "All specialist agent outputs", output: "Unified recommendation or escalation flag", tech: "LangGraph state + LLM arbiter", note: "Escalates to human clinician if confidence < threshold or agents disagree sharply." },
-  { id: 8, name: "Explanation", icon: FileText, desc: "SOAP note + FHIR Bundle generation", tag: "A2A", input: "Consensus output", output: "SOAP note, FHIR Bundle, patient summary", tech: "GPT-4o-mini / Claude Haiku", note: "Generates three output formats: clinician SOAP, structured FHIR, plain-language patient summary." },
+  { id: 8, name: "Explanation", icon: FileText, desc: "SOAP note + FHIR Bundle generation", tag: "A2A", input: "Consensus output", output: "SOAP note, FHIR Bundle, patient summary", tech: "Gemini-2.5-Flash", note: "Generates three output formats: clinician SOAP, structured FHIR, plain-language patient summary." },
 ];
 
 const questions = [
@@ -85,10 +85,6 @@ const stack = [
   { label: "Caching", val: "Redis", cat: "Backend" },
   { label: "API Framework", val: "FastAPI", cat: "Backend" },
   { label: "Deployment", val: "Docker Compose", cat: "Backend" },
-  // Frontend
-  { label: "UI Framework", val: "React + Vite", cat: "Frontend" },
-  { label: "Styling", val: "Tailwind CSS v4", cat: "Frontend" },
-  { label: "Icons", val: "Lucide React", cat: "Frontend" },
 ];
 
 /* ════════════════════════════════════════════════
@@ -148,6 +144,8 @@ export default function LandingPage() {
   const [agentsRef, agentsOn] = useReveal(0.05);
   const [pipeRef, pipeOn] = useReveal(0.05);
   const [stackRef, stackOn] = useReveal(0.05);
+  const [imagingRef, imagingOn] = useReveal(0.05);
+  const [twinRef, twinOn] = useReveal(0.05);
   const [ctaRef, ctaOn] = useReveal(0.2);
 
   /* ── lifecycle ──────────────────────────────── */
@@ -383,7 +381,6 @@ export default function LandingPage() {
             {[
               { val: "8", label: "Specialist Agents" },
               { val: "3", label: "Core Questions" },
-              { val: "< 12s", label: "End-to-End Latency" },
               { val: "FHIR R4", label: "Standards Compliant" },
             ].map(({ val, label }, i) => (
               <StatItem key={label} val={val} label={label} active={statsOn} delay={i * 120} />
@@ -835,6 +832,211 @@ export default function LandingPage() {
               </div>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════
+          IMAGING TRIAGE METRICS
+      ══════════════════════════════════════════ */}
+      <section id="imaging-metrics" className="py-24 px-8 bg-[var(--color-bg-elevated)]">
+        <div className="max-w-6xl mx-auto">
+          <div
+            ref={imagingRef}
+            style={{
+              opacity: imagingOn ? 1 : 0,
+              transform: imagingOn ? "translateY(0)" : "translateY(20px)",
+              transition: "opacity 0.7s ease, transform 0.7s ease",
+            }}
+          >
+            <p className="text-[var(--color-text-subtle)] text-xs font-bold tracking-[0.3em] uppercase mb-3">Model Performance</p>
+            <h2 className="text-5xl font-black uppercase tracking-tight text-[var(--color-text)] mb-4">Imaging Triage</h2>
+            <p className="text-[var(--color-text-muted)] text-base font-medium mb-16 max-w-3xl">
+              Chest X-ray pneumonia detection using deep learning CNNs trained on 5,856 images.
+              Production model achieves <span className="text-[var(--color-accent)] font-bold">95.5% accuracy</span> and <span className="text-[var(--color-accent)] font-bold">99.2% AUC</span>.
+            </p>
+          </div>
+
+          {/* Model comparison grid */}
+          <div className="grid lg:grid-cols-2 gap-px bg-[var(--color-border)]">
+            {/* Custom CNN */}
+            <div
+              className="bg-[var(--color-bg)] p-8 group hover:bg-[var(--color-accent)]/5 transition-colors duration-300"
+              style={{
+                opacity: imagingOn ? 1 : 0,
+                transform: imagingOn ? "translateY(0)" : "translateY(16px)",
+                transition: "opacity 0.6s ease 100ms, transform 0.6s ease 100ms",
+              }}
+            >
+              <div className="flex items-start justify-between mb-6">
+                <div>
+                  <h3 className="text-2xl font-black text-[var(--color-text)] mb-2">Custom CNN</h3>
+                  <p className="text-xs font-bold tracking-[0.15em] uppercase text-[var(--color-text-subtle)]">Baseline Architecture</p>
+                </div>
+                <Scan className="w-8 h-8 text-[var(--color-accent)]/30 group-hover:text-[var(--color-accent)]/50 transition-colors duration-300" />
+              </div>
+
+              <div className="space-y-4">
+                {[
+                  { label: "Accuracy", value: "94.69%", raw: 0.9469 },
+                  { label: "AUC", value: "98.26%", raw: 0.9826 },
+                  { label: "Precision", value: "94.29%", raw: 0.9429 },
+                  { label: "Recall", value: "98.73%", raw: 0.9873 },
+                ].map((metric, i) => (
+                  <div key={metric.label} className="flex justify-between items-center">
+                    <span className="text-xs font-bold tracking-[0.1em] uppercase text-[var(--color-text-muted)]">{metric.label}</span>
+                    <div className="flex items-center gap-3">
+                      <div className="w-32 h-1.5 bg-[var(--color-border)] rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-[var(--color-accent)] transition-all duration-1000 ease-out"
+                          style={{
+                            width: imagingOn ? `${metric.raw * 100}%` : "0%",
+                            transitionDelay: `${i * 100 + 200}ms`,
+                          }}
+                        />
+                      </div>
+                      <span className="text-lg font-black text-[var(--color-text)] tabular-nums w-20 text-right">{metric.value}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* EfficientNetB0 */}
+            <div
+              className="bg-[var(--color-bg)] p-8 group hover:bg-[var(--color-accent)]/5 transition-colors duration-300 relative"
+              style={{
+                opacity: imagingOn ? 1 : 0,
+                transform: imagingOn ? "translateY(0)" : "translateY(16px)",
+                transition: "opacity 0.6s ease 200ms, transform 0.6s ease 200ms",
+              }}
+            >
+              {/* Production badge */}
+              <div className="absolute top-4 right-4 px-3 py-1 bg-[var(--color-accent)] text-[var(--color-bg)] text-[9px] font-black tracking-[0.2em] uppercase">
+                PRODUCTION
+              </div>
+
+              <div className="flex items-start justify-between mb-6">
+                <div>
+                  <h3 className="text-2xl font-black text-[var(--color-text)] mb-2">EfficientNetB0</h3>
+                  <p className="text-xs font-bold tracking-[0.15em] uppercase text-[var(--color-text-subtle)]">Transfer Learning</p>
+                </div>
+                <Scan className="w-8 h-8 text-[var(--color-accent)]/30 group-hover:text-[var(--color-accent)]/50 transition-colors duration-300" />
+              </div>
+
+              <div className="space-y-4">
+                {[
+                  { label: "Accuracy", value: "95.52%", raw: 0.9552 },
+                  { label: "AUC", value: "99.15%", raw: 0.9915 },
+                  { label: "Precision", value: "98.55%", raw: 0.9855 },
+                  { label: "Recall", value: "95.27%", raw: 0.9527 },
+                ].map((metric, i) => (
+                  <div key={metric.label} className="flex justify-between items-center">
+                    <span className="text-xs font-bold tracking-[0.1em] uppercase text-[var(--color-text-muted)]">{metric.label}</span>
+                    <div className="flex items-center gap-3">
+                      <div className="w-32 h-1.5 bg-[var(--color-border)] rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-[var(--color-accent)] transition-all duration-1000 ease-out"
+                          style={{
+                            width: imagingOn ? `${metric.raw * 100}%` : "0%",
+                            transitionDelay: `${i * 100 + 300}ms`,
+                          }}
+                        />
+                      </div>
+                      <span className="text-lg font-black text-[var(--color-text)] tabular-nums w-20 text-right">{metric.value}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════
+          DIGITAL TWIN METRICS
+      ══════════════════════════════════════════ */}
+      <section id="twin-metrics" className="py-24 px-8">
+        <div className="max-w-6xl mx-auto">
+          <div
+            ref={twinRef}
+            style={{
+              opacity: twinOn ? 1 : 0,
+              transform: twinOn ? "translateY(0)" : "translateY(20px)",
+              transition: "opacity 0.7s ease, transform 0.7s ease",
+            }}
+          >
+            <p className="text-[var(--color-text-subtle)] text-xs font-bold tracking-[0.3em] uppercase mb-3">Synthetic Data Training</p>
+            <h2 className="text-5xl font-black uppercase tracking-tight text-[var(--color-text)] mb-4">Digital Twin Risk Models</h2>
+            <p className="text-[var(--color-text-muted)] text-base font-medium mb-16 max-w-3xl">
+              Five XGBoost classifiers trained on <span className="text-[var(--color-accent)] font-bold">8,000 synthetic patient records</span>
+              {" "}with 19 clinical features. 80/20 train-test split for outcome prediction.
+            </p>
+          </div>
+
+          {/* Risk models grid */}
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-px bg-[var(--color-border)]">
+            {[
+              { name: "30-Day Readmission", auc: 0.727, prevalence: "20.3%", delay: 100 },
+              { name: "30-Day Mortality", auc: 0.740, prevalence: "9.9%", delay: 150 },
+              { name: "Complication Risk", auc: 0.718, prevalence: "10.6%", delay: 200 },
+              { name: "90-Day Readmission", auc: 0.737, prevalence: "47.4%", delay: 250 },
+              { name: "1-Year Mortality", auc: 0.804, prevalence: "28.5%", delay: 300 },
+            ].map((model) => (
+              <div
+                key={model.name}
+                className="bg-[var(--color-bg)] p-6 group hover:bg-[var(--color-accent)]/5 transition-all duration-300 relative overflow-hidden"
+                style={{
+                  opacity: twinOn ? 1 : 0,
+                  transform: twinOn ? "translateY(0)" : "translateY(16px)",
+                  transition: `opacity 0.6s ease ${model.delay}ms, transform 0.6s ease ${model.delay}ms`,
+                }}
+              >
+                {/* Hover gradient */}
+                <div className="absolute inset-0 bg-gradient-to-br from-[var(--color-accent)]/0 to-[var(--color-accent)]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                <div className="relative z-10">
+                  <div className="flex items-start justify-between mb-6">
+                    <h3 className="text-base font-black text-[var(--color-text)] uppercase tracking-tight leading-tight">
+                      {model.name}
+                    </h3>
+                    <BarChart2 className="w-5 h-5 text-[var(--color-accent)]/30 group-hover:text-[var(--color-accent)]/60 transition-colors duration-300" />
+                  </div>
+
+                  <div className="space-y-3">
+                    {/* AUC */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[10px] font-bold tracking-[0.15em] uppercase text-[var(--color-text-subtle)]">AUC</span>
+                        <span className="text-2xl font-black text-[var(--color-text)] tabular-nums group-hover:text-[var(--color-accent)] transition-colors duration-300">
+                          {model.auc.toFixed(3)}
+                        </span>
+                      </div>
+                      <div className="w-full h-1 bg-[var(--color-border)] rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-[var(--color-accent)] transition-all duration-1000 ease-out"
+                          style={{
+                            width: twinOn ? `${model.auc * 100}%` : "0%",
+                            transitionDelay: `${model.delay + 100}ms`,
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Prevalence */}
+                    <div className="pt-2 border-t border-[var(--color-border)]/50">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold tracking-[0.15em] uppercase text-[var(--color-text-subtle)]">Prevalence</span>
+                        <span className="text-sm font-black text-[var(--color-text-muted)] tabular-nums">{model.prevalence}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Corner accent */}
+                <div className="absolute bottom-0 right-0 w-0 h-0 border-[10px] border-transparent border-b-[var(--color-accent)]/10 border-r-[var(--color-accent)]/10 group-hover:border-b-[var(--color-accent)]/20 group-hover:border-r-[var(--color-accent)]/20 transition-colors duration-300" />
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
