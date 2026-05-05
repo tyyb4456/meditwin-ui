@@ -1,20 +1,57 @@
-import { useState, useRef, useEffect } from "react";
+/**
+ * LabAnalysisAgent.jsx
+ * ─────────────────────
+ * Page shell — owns all state and SSE stream logic.
+ * Renders:
+ *   1. Sticky nav
+ *   2. Agent hero
+ *   3. 2-col grid: <LabInputPanel> + <LabResultsPanel>
+ *   4. <LabHistory>
+ */
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { FlaskConical, ArrowLeft, ChevronRight, Wifi } from "lucide-react";
+import { FlaskConical, ArrowLeft, ChevronRight, Wifi, Loader2 } from "lucide-react";
 import ThemeToggle from "../components/theme/ThemeToggle";
 import LabHistory from "../components/history/LabHistory";
 import LabInputPanel from "../components/agents/lab/LabInputPanel";
 import LabResultsPanel from "../components/agents/lab/LabResultsPanel";
 
-const C = {
-    bg: "var(--color-bg)", surface: "var(--color-surface)", border: "var(--color-border)",
-    text: "var(--color-text)", muted: "var(--color-text-subtle)", dim: "var(--color-border)",
-    cyan: "#06B6D4",
-};
+// ── Color tokens ─────────────────────────────────────────────────────────────
+const ACCENT  = "var(--color-accent)";
+const BG      = "var(--color-bg)";
+const SURFACE = "var(--color-surface)";
+const BORDER  = "var(--color-border)";
+const TEXT    = "var(--color-text)";
+const MUTED   = "var(--color-text-muted)";
+const SUBTLE  = "var(--color-text-subtle)";
+const CYAN    = "#06B6D4";
+
+// ── Global styles ─────────────────────────────────────────────────────────────
+const GLOBAL_STYLES = `
+    @keyframes spin    { to { transform: rotate(360deg); } }
+    @keyframes pulse   { 0%,100%{ opacity:1 } 50%{ opacity:.4 } }
+    @keyframes fadeIn  { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes fadeSlideIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+    * { box-sizing: border-box; }
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 4px; }
+    select option { background: var(--color-bg); color: var(--color-text); }
+    input:focus, textarea:focus, select:focus { border-color: #06B6D4 !important; outline: none; }
+    input::placeholder, textarea::placeholder { color: var(--color-text-subtle); opacity: 0.7; }
+`;
+
+const BREADCRUMBS = [
+    { label: "Dashboard",     path: "/dashboard" },
+    { label: "Microservices", path: "/dashboard/microservices" },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 export default function LabAnalysisAgent() {
     const navigate = useNavigate();
 
+    // ── State ─────────────────────────────────────────────────────────────────
     const [inputMode,       setInputMode]       = useState("form");
     const [isStreaming,     setIsStreaming]      = useState(false);
     const [streamEvents,    setStreamEvents]    = useState([]);
@@ -44,7 +81,6 @@ export default function LabAnalysisAgent() {
         if (!isStreaming || !liveText || finalResult) return;
         try {
             const partial = {};
-
             const sevMatch   = liveText.match(/"overall_severity"\s*:\s*"([^"]+)"/);
             const totalMatch = liveText.match(/"total_results"\s*:\s*(\d+)/);
             const abnMatch   = liveText.match(/"abnormal_count"\s*:\s*(\d+)/);
@@ -57,7 +93,6 @@ export default function LabAnalysisAgent() {
                     critical_count:   critMatch  ? parseInt(critMatch[1])  : 0,
                 };
             }
-
             const displays = [...liveText.matchAll(/"display"\s*:\s*"([^"]+)"/g)].map(m => m[1]);
             const flags    = [...liveText.matchAll(/"flag"\s*:\s*"([^"]+)"/g)].map(m => m[1]);
             const vals     = [...liveText.matchAll(/"value"\s*:\s*([\d.]+)/g)].map(m => parseFloat(m[1]));
@@ -70,7 +105,6 @@ export default function LabAnalysisAgent() {
                     reference_range: "", clinical_significance: "",
                 }));
             }
-
             const scoreMatch = liveText.match(/"score"\s*:\s*(\d+)/);
             const riskMatch  = liveText.match(/"risk_category"\s*:\s*"([^"]+)"/);
             if (scoreMatch || riskMatch) {
@@ -79,9 +113,8 @@ export default function LabAnalysisAgent() {
                     risk_category: riskMatch  ? riskMatch[1]           : "...",
                 };
             }
-
             if (Object.keys(partial).length > 0) setPartialResult(partial);
-        } catch { /* ignore incremental parse errors */ }
+        } catch { }
     }, [liveText, isStreaming, finalResult]);
 
     const handleCopy = () => {
@@ -95,7 +128,7 @@ export default function LabAnalysisAgent() {
         setIsStreaming(false);
     };
 
-    const runLabAnalysis = async (patientState, diagnosisOutput) => {
+    const runLabAnalysis = useCallback(async (patientState, diagnosisOutput) => {
         handleReset();
         setIsStreaming(true);
         abortControllerRef.current = new AbortController();
@@ -105,10 +138,10 @@ export default function LabAnalysisAgent() {
             if (diagnosisOutput) body.diagnosis_agent_output = diagnosisOutput;
 
             const response = await fetch("http://127.0.0.1:8003/stream", {
-                method: "POST",
+                method:  "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(body),
-                signal: abortControllerRef.current.signal,
+                body:    JSON.stringify(body),
+                signal:  abortControllerRef.current.signal,
             });
 
             if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -138,121 +171,126 @@ export default function LabAnalysisAgent() {
                             if (event.type === "complete") { setFinalResult(event.data); setCurrentStep(null); setIsStreaming(false); }
                             if (event.type === "error")    { setError(event.message); if (event.fatal) setIsStreaming(false); }
                         }
-                    } catch { /* ignore */ }
+                    } catch { }
                 }
             }
         } catch (err) {
             if (err.name !== "AbortError") { setError(err.message); setIsStreaming(false); }
         }
-    };
+    }, []);
 
     const displayResult = finalResult || partialResult;
     const isFinal = !!finalResult;
 
+    // ─────────────────────────────────────────────────────────────────────────
     return (
-        <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
-            <style>{`
-                @keyframes spin    { to { transform: rotate(360deg); } }
-                @keyframes pulse   { 0%,100%{ opacity:1 } 50%{ opacity:.4 } }
-                * { box-sizing: border-box; }
-                ::-webkit-scrollbar       { width: 4px; height: 4px; }
-                ::-webkit-scrollbar-track { background: var(--color-surface); }
-                ::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 2px; }
-                select option             { background: var(--color-bg); color: var(--color-text); }
-            `}</style>
+        <div style={{ minHeight: "100vh", background: BG, color: TEXT, fontFamily: "'Space Grotesk', system-ui, sans-serif" }}>
+            <style>{GLOBAL_STYLES}</style>
 
-            {/* Sticky Nav */}
-            <div style={{
-                position: "sticky", top: 0, zIndex: 50,
-                background: `color-mix(in srgb, ${C.bg} 92%, transparent)`,
-                backdropFilter: "blur(12px)",
-                borderBottom: `1px solid ${C.border}`,
+            {/* ── Sticky top nav ── */}
+            <nav style={{
+                position: "sticky", top: 0, zIndex: 50, height: 56,
+                background: "color-mix(in srgb, var(--color-bg) 90%, transparent)",
+                backdropFilter: "blur(16px)", borderBottom: `1px solid ${BORDER}`,
                 display: "flex", alignItems: "center", justifyContent: "space-between",
-                padding: "0 24px", height: 56,
+                padding: "0 24px",
             }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                     <button
                         onClick={() => navigate("/dashboard/microservices")}
                         style={{
-                            background: "none", border: `1px solid ${C.border}`,
-                            color: C.muted, padding: "5px 10px", cursor: "pointer",
-                            display: "flex", alignItems: "center", gap: 5, fontSize: 11,
-                            fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase",
-                            transition: "color 0.2s, border-color 0.2s",
+                            background: "none", border: `1px solid ${BORDER}`, color: SUBTLE,
+                            borderRadius: 7, padding: "5px 12px", cursor: "pointer",
+                            display: "flex", alignItems: "center", gap: 6,
+                            fontSize: 11, fontWeight: 700, letterSpacing: "0.1em",
+                            textTransform: "uppercase", transition: "all 0.2s",
                         }}
-                        onMouseEnter={e => { e.currentTarget.style.color = C.text; e.currentTarget.style.borderColor = C.muted; }}
-                        onMouseLeave={e => { e.currentTarget.style.color = C.muted; e.currentTarget.style.borderColor = C.border; }}
+                        onMouseEnter={e => { e.currentTarget.style.color = TEXT; e.currentTarget.style.borderColor = MUTED; }}
+                        onMouseLeave={e => { e.currentTarget.style.color = SUBTLE; e.currentTarget.style.borderColor = BORDER; }}
                     >
                         <ArrowLeft size={11} /> Back
                     </button>
-                    <div style={{ width: 1, height: 20, background: C.border }} />
-                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                        <div style={{ width: 26, height: 26, background: C.cyan, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, borderRadius: 4 }}>
-                            <span style={{ color: "#fff", fontSize: 9, fontWeight: 900 }}>MT</span>
+
+                    <div style={{ width: 1, height: 20, background: BORDER }} />
+
+                    <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                        <div style={{ width: 24, height: 24, background: CYAN, borderRadius: 5, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                            <span style={{ color: "#fff", fontSize: 8, fontWeight: 900 }}>MT</span>
                         </div>
-                        {[
-                            { label: "MediTwin AI",   path: "/" },
-                            { label: "Dashboard",     path: "/dashboard" },
-                            { label: "Microservices", path: "/dashboard/microservices" },
-                        ].map(crumb => (
-                            <span key={crumb.path} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                                <ChevronRight size={10} color={C.muted} style={{ opacity: 0.5 }} />
+
+                        {BREADCRUMBS.map(c => (
+                            <span key={c.path} style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                                <ChevronRight size={10} color={SUBTLE} />
                                 <button
-                                    onClick={() => navigate(crumb.path)}
-                                    style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: C.muted, transition: "color 0.2s", padding: 0 }}
-                                    onMouseEnter={e => e.currentTarget.style.color = C.text}
-                                    onMouseLeave={e => e.currentTarget.style.color = C.muted}
-                                >{crumb.label}</button>
+                                    onClick={() => navigate(c.path)}
+                                    style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, fontWeight: 600, color: SUBTLE, padding: 0, transition: "color 0.2s" }}
+                                    onMouseEnter={e => e.currentTarget.style.color = TEXT}
+                                    onMouseLeave={e => e.currentTarget.style.color = SUBTLE}
+                                >{c.label}</button>
                             </span>
                         ))}
-                        <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                            <ChevronRight size={10} color={C.muted} style={{ opacity: 0.5 }} />
-                            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: C.text }}>
-                                Lab Analysis Agent
-                            </span>
-                        </span>
+
+                        <ChevronRight size={10} color={SUBTLE} />
+                        <span style={{ fontSize: 11, fontWeight: 700, color: TEXT }}>Lab Analysis Agent</span>
                     </div>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, border: `1px solid ${C.border}`, padding: "4px 10px", fontSize: 11 }}>
-                        <Wifi size={11} color={C.cyan} />
-                        <span style={{ color: C.muted, fontFamily: "monospace" }}>:8003</span>
+
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <div style={{
+                        display: "flex", alignItems: "center", gap: 5,
+                        background: SURFACE, border: `1px solid ${BORDER}`,
+                        borderRadius: 7, padding: "4px 10px",
+                    }}>
+                        <Wifi size={10} color={CYAN} />
+                        <span style={{ fontSize: 11, color: MUTED, fontFamily: "monospace" }}>:8003</span>
                     </div>
-                    <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", padding: "4px 10px", border: `1px solid ${C.border}`, color: C.cyan }}>
-                        A2A
-                    </div>
+                    <div style={{
+                        fontSize: 10, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase",
+                        padding: "4px 10px", border: `1px solid ${CYAN}40`, borderRadius: 7,
+                        color: CYAN, background: `${CYAN}0E`,
+                    }}>A2A</div>
                     <ThemeToggle />
                 </div>
-            </div>
+            </nav>
 
-            {/* Page Header */}
-            <div style={{ background: C.surface, borderBottom: `1px solid ${C.border}`, padding: "20px 24px" }}>
-                <div style={{ maxWidth: 1400, margin: "0 auto" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 6 }}>
-                        <div style={{ width: 38, height: 38, background: `${C.cyan}20`, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 4, position: "relative", overflow: "hidden" }}>
-                            <FlaskConical size={18} color={C.cyan} strokeWidth={1.75} />
-                            {isStreaming && (
-                                <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 2, background: C.cyan, animation: "pulse 1s infinite" }} />
-                            )}
+            {/* ── Agent hero ── */}
+            <div style={{ background: SURFACE, borderBottom: `1px solid ${BORDER}`, position: "relative", overflow: "hidden" }}>
+                <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, ${CYAN}, rgba(6,182,212,0.3))` }} />
+                <div style={{ position: "absolute", top: -60, right: -60, width: 280, height: 280, borderRadius: "50%", background: `radial-gradient(circle, ${CYAN}10 0%, transparent 70%)`, pointerEvents: "none" }} />
+
+                <div style={{ maxWidth: 1400, margin: "0 auto", padding: "28px 24px", position: "relative" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                        <div style={{
+                            width: 52, height: 52, borderRadius: 14, flexShrink: 0,
+                            background: `linear-gradient(135deg, ${CYAN} 0%, rgba(6,182,212,0.55) 100%)`,
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            boxShadow: `0 8px 24px ${CYAN}30`,
+                        }}>
+                            <FlaskConical size={22} color="#fff" strokeWidth={1.75} />
                         </div>
+
                         <div>
-                            <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: C.muted, margin: 0 }}>Agent 03</p>
-                            <h1 style={{ fontSize: 22, fontWeight: 900, letterSpacing: "-0.02em", textTransform: "uppercase", color: C.text, margin: 0, lineHeight: 1.1 }}>
-                                Lab Analysis Agent
-                            </h1>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
+                                <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: CYAN }}>Agent 03</span>
+                                <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.15em", textTransform: "uppercase", color: CYAN, border: `1px solid ${CYAN}50`, background: `${CYAN}0E`, padding: "1px 6px", borderRadius: 4 }}>A2A</span>
+                                <span style={{ fontSize: 9, color: SUBTLE, fontFamily: "monospace", border: `1px solid ${BORDER}`, padding: "1px 6px", borderRadius: 4 }}>::8003</span>
+                                {isStreaming && (
+                                    <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10, fontWeight: 700, color: ACCENT, letterSpacing: "0.1em", textTransform: "uppercase" }}>
+                                        <Loader2 size={10} style={{ animation: "spin 1s linear infinite" }} /> Streaming
+                                    </span>
+                                )}
+                            </div>
+                            <h1 style={{ fontSize: 26, fontWeight: 900, letterSpacing: "-0.02em", color: TEXT, margin: 0, lineHeight: 1 }}>Lab Analysis Agent</h1>
+                            <p style={{ fontSize: 13, color: MUTED, margin: "6px 0 0", maxWidth: 580 }}>
+                                LOINC-aware lab intelligence engine with pattern analysis, diagnosis confirmation, severity scoring, and real-time clinical decision support via streaming SSE.
+                            </p>
                         </div>
                     </div>
-                    <p style={{ fontSize: 13, color: C.muted, margin: 0, maxWidth: 660 }}>
-                        LOINC-aware lab intelligence engine with pattern analysis, diagnosis confirmation, severity scoring, and real-time clinical decision support via streaming SSE.
-                    </p>
                 </div>
             </div>
 
-            {/* Main 2-col Grid */}
-            <div style={{
-                maxWidth: 1400, margin: "0 auto", padding: "20px 24px",
-                display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, alignItems: "start",
-            }}>
+            {/* ── Main 2-col grid ── */}
+            <div style={{ maxWidth: 1400, margin: "0 auto", padding: "20px 24px", display: "grid", gridTemplateColumns: "460px 1fr", gap: 16, alignItems: "start" }}>
                 <LabInputPanel
                     inputMode={inputMode}
                     setInputMode={setInputMode}
@@ -279,12 +317,15 @@ export default function LabAnalysisAgent() {
                 />
             </div>
 
-            {/* History */}
-            <div style={{ maxWidth: 1400, margin: "0 auto 40px", padding: "0 24px" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, paddingTop: 24, borderTop: `1px solid ${C.border}` }}>
-                    <div style={{ flex: 1, height: 1, background: C.border }} />
-                    <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.25em", textTransform: "uppercase", color: C.muted, padding: "0 12px" }}>Fetch History</span>
-                    <div style={{ flex: 1, height: 1, background: C.border }} />
+            {/* ── Lab History ── */}
+            <div style={{ maxWidth: 1400, margin: "0 auto 48px", padding: "0 24px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16, paddingTop: 24, borderTop: `1px solid ${BORDER}` }}>
+                    <div style={{ flex: 1, height: 1, background: BORDER }} />
+                    <span style={{
+                        fontSize: 10, fontWeight: 700, letterSpacing: "0.24em",
+                        textTransform: "uppercase", color: SUBTLE,
+                    }}>Lab History</span>
+                    <div style={{ flex: 1, height: 1, background: BORDER }} />
                 </div>
                 <LabHistory defaultPatientId="" />
             </div>

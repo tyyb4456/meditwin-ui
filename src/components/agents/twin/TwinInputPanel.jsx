@@ -1,21 +1,24 @@
 import { useState } from "react";
 import { FileJson, FormInput, Play, AlertCircle, Loader2, Plus, Trash2 } from "lucide-react";
 
-const C = {
-    bg: "var(--color-bg)", surface: "var(--color-surface)", border: "var(--color-border)",
-    accent: "#3b82f6", text: "var(--color-text)", muted: "var(--color-text-subtle)",
-    dim: "var(--color-border)", red: "#EF4444", blue: "#3b82f6",
-};
+// ── Color tokens ──────────────────────────────────────────────────────────────
+const BG      = "var(--color-bg)";
+const SURFACE = "var(--color-surface)";
+const BORDER  = "var(--color-border)";
+const TEXT    = "var(--color-text)";
+const MUTED   = "var(--color-text-subtle)";
+const RED     = "#EF4444";
+const BLUE    = "#3B82F6";
 
 const inputStyle = {
-    width: "100%", background: C.bg, border: `1px solid ${C.border}`,
-    color: C.text, padding: "8px 10px", fontSize: 13, outline: "none",
-    fontFamily: "inherit", borderRadius: 0,
+    width: "100%", background: BG, border: `1px solid ${BORDER}`,
+    color: TEXT, padding: "8px 10px", fontSize: 13, outline: "none",
+    fontFamily: "'Space Grotesk', system-ui, sans-serif", borderRadius: 8,
 };
 const labelStyle = {
     display: "block", fontSize: 10, fontWeight: 700,
     letterSpacing: "0.15em", textTransform: "uppercase",
-    color: C.muted, marginBottom: 6,
+    color: MUTED, marginBottom: 6,
 };
 function Field({ label, children }) {
     return <div><label style={labelStyle}>{label}</label>{children}</div>;
@@ -161,7 +164,7 @@ function FormInputMode({ onSubmit, isStreaming }) {
 
     const rowBtnStyle = {
         background: "none", border: "none", cursor: "pointer",
-        color: C.muted, padding: 4, display: "flex", alignItems: "center", transition: "color 0.2s",
+        color: MUTED, padding: 4, display: "flex", alignItems: "center", transition: "color 0.2s",
     };
 
     return (
@@ -209,13 +212,15 @@ function FormInputMode({ onSubmit, isStreaming }) {
                     placeholder="Penicillin, Anaphylaxis, severe" />
             </Field>
 
+            {/* Lab results */}
             <div>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
                     <label style={labelStyle}>Lab Results</label>
                     <button type="button" onClick={addLabRow} style={{
                         display: "flex", alignItems: "center", gap: 4,
-                        background: "none", border: `1px solid ${C.blue}`, color: C.blue,
-                        padding: "3px 8px", cursor: "pointer", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em",
+                        background: "none", border: `1px solid ${BLUE}`, color: BLUE,
+                        borderRadius: 6, padding: "3px 8px", cursor: "pointer",
+                        fontSize: 10, fontWeight: 700, letterSpacing: "0.1em",
                     }}>
                         <Plus size={10} /> Add Row
                     </button>
@@ -238,8 +243,8 @@ function FormInputMode({ onSubmit, isStreaming }) {
                                 <option value="CRITICAL">CRITICAL</option>
                             </select>
                             <button type="button" onClick={() => removeLabRow(i)} style={rowBtnStyle}
-                                onMouseEnter={e => e.currentTarget.style.color = C.red}
-                                onMouseLeave={e => e.currentTarget.style.color = C.muted}>
+                                onMouseEnter={e => e.currentTarget.style.color = RED}
+                                onMouseLeave={e => e.currentTarget.style.color = MUTED}>
                                 <Trash2 size={13} />
                             </button>
                         </div>
@@ -247,20 +252,23 @@ function FormInputMode({ onSubmit, isStreaming }) {
                 </div>
             </div>
 
-            <div style={{ padding: 12, background: `${C.blue}08`, border: `1px solid ${C.blue}30` }}>
-                <p style={{ ...labelStyle, color: C.blue, margin: "0 0 8px" }}>Diagnosis * (required by Digital Twin)</p>
+            {/* Diagnosis */}
+            <div style={{ padding: 12, background: `${BLUE}08`, border: `1px solid ${BLUE}30`, borderRadius: 8 }}>
+                <p style={{ ...labelStyle, color: BLUE, margin: "0 0 8px" }}>Diagnosis * (required by Digital Twin)</p>
                 <input style={inputStyle} value={diagnosis} onChange={e => setDiagnosis(e.target.value)}
                     placeholder="Community-acquired pneumonia (J18.9)" required />
             </div>
 
+            {/* Treatment options */}
             <div>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
                     <label style={labelStyle}>Treatment Options to Simulate</label>
                     {options.length < 5 && (
                         <button type="button" onClick={addOption} style={{
                             display: "flex", alignItems: "center", gap: 4,
-                            background: "none", border: `1px solid ${C.blue}`, color: C.blue,
-                            padding: "3px 8px", cursor: "pointer", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em",
+                            background: "none", border: `1px solid ${BLUE}`, color: BLUE,
+                            borderRadius: 6, padding: "3px 8px", cursor: "pointer",
+                            fontSize: 10, fontWeight: 700, letterSpacing: "0.1em",
                         }}>
                             <Plus size={10} /> Add Option
                         </button>
@@ -268,19 +276,19 @@ function FormInputMode({ onSubmit, isStreaming }) {
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                     {options.map((opt, i) => (
-                        <div key={i} style={{ padding: 12, border: `1px solid ${C.border}`, background: C.bg }}>
+                        <div key={i} style={{ padding: 12, border: `1px solid ${BORDER}`, background: BG, borderRadius: 10 }}>
                             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
                                 <span style={{
-                                    fontSize: 11, fontWeight: 900, color: C.blue,
-                                    background: `${C.blue}12`, padding: "2px 8px",
-                                    border: `1px solid ${C.blue}30`,
+                                    fontSize: 11, fontWeight: 900, color: BLUE,
+                                    background: `${BLUE}12`, padding: "2px 8px",
+                                    border: `1px solid ${BLUE}30`, borderRadius: 6,
                                 }}>
                                     Option {String.fromCharCode(65 + i)}
                                 </span>
                                 {options.length > 1 && (
                                     <button type="button" onClick={() => removeOption(i)} style={rowBtnStyle}
-                                        onMouseEnter={e => e.currentTarget.style.color = C.red}
-                                        onMouseLeave={e => e.currentTarget.style.color = C.muted}>
+                                        onMouseEnter={e => e.currentTarget.style.color = RED}
+                                        onMouseLeave={e => e.currentTarget.style.color = MUTED}>
                                         <Trash2 size={12} />
                                     </button>
                                 )}
@@ -308,30 +316,32 @@ function FormInputMode({ onSubmit, isStreaming }) {
                 </div>
             </div>
 
+            {/* Prediction horizons */}
             <div>
                 <label style={labelStyle}>Prediction Horizons</label>
                 <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
                     {["7d", "30d", "90d", "1yr"].map(h => (
-                        <label key={h} style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 12, color: C.text }}>
+                        <label key={h} style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 12, color: TEXT }}>
                             <input type="checkbox" checked={horizons.includes(h)} onChange={() => toggleHorizon(h)}
-                                style={{ accentColor: C.blue }} />
+                                style={{ accentColor: BLUE }} />
                             {h}
                         </label>
                     ))}
                 </div>
             </div>
 
-            <div style={{ padding: 12, background: `${C.blue}06`, border: `1px solid ${C.border}` }}>
+            {/* Patient preferences */}
+            <div style={{ padding: 12, background: `${BLUE}06`, border: `1px solid ${BORDER}`, borderRadius: 8 }}>
                 <label style={{ ...labelStyle, marginBottom: 10 }}>Patient Preferences</label>
                 <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
-                    <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 12, color: C.text }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 12, color: TEXT }}>
                         <input type="checkbox" checked={prioritizeCost} onChange={e => setPrioritizeCost(e.target.checked)}
-                            style={{ accentColor: C.blue }} />
+                            style={{ accentColor: BLUE }} />
                         Prioritize lower cost
                     </label>
-                    <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 12, color: C.text }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 12, color: TEXT }}>
                         <input type="checkbox" checked={avoidHosp} onChange={e => setAvoidHosp(e.target.checked)}
-                            style={{ accentColor: C.blue }} />
+                            style={{ accentColor: BLUE }} />
                         Avoid hospitalization
                     </label>
                 </div>
@@ -339,12 +349,13 @@ function FormInputMode({ onSubmit, isStreaming }) {
 
             <button type="submit" disabled={isStreaming} style={{
                 width: "100%", padding: "11px 0",
-                background: isStreaming ? C.dim : C.blue,
-                border: "none", color: isStreaming ? C.muted : "#fff",
+                background: isStreaming ? BORDER : BLUE,
+                border: "none", color: isStreaming ? MUTED : "#fff",
                 fontSize: 12, fontWeight: 800, letterSpacing: "0.2em", textTransform: "uppercase",
                 cursor: isStreaming ? "not-allowed" : "pointer",
                 display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-                transition: "background 0.2s",
+                borderRadius: 9, transition: "all 0.2s",
+                boxShadow: isStreaming ? "none" : `0 4px 16px ${BLUE}40`,
             }}>
                 {isStreaming
                     ? <><Loader2 size={15} style={{ animation: "spin 1s linear infinite" }} /> Streaming...</>
@@ -381,19 +392,20 @@ function JsonInputMode({ onSubmit, isStreaming }) {
                 />
             </div>
             {error && (
-                <div style={{ padding: "10px 14px", background: `${C.red}12`, border: `1px solid ${C.red}40`, display: "flex", alignItems: "flex-start", gap: 8 }}>
-                    <AlertCircle size={14} color={C.red} style={{ flexShrink: 0, marginTop: 1 }} />
-                    <p style={{ fontSize: 12, color: C.red, margin: 0 }}>{error}</p>
+                <div style={{ padding: "10px 14px", background: `${RED}12`, border: `1px solid ${RED}40`, borderRadius: 8, display: "flex", alignItems: "flex-start", gap: 8 }}>
+                    <AlertCircle size={14} color={RED} style={{ flexShrink: 0, marginTop: 1 }} />
+                    <p style={{ fontSize: 12, color: RED, margin: 0 }}>{error}</p>
                 </div>
             )}
             <button type="submit" disabled={isStreaming} style={{
                 width: "100%", padding: "11px 0",
-                background: isStreaming ? C.dim : C.blue,
-                border: "none", color: isStreaming ? C.muted : "#fff",
+                background: isStreaming ? BORDER : BLUE,
+                border: "none", color: isStreaming ? MUTED : "#fff",
                 fontSize: 12, fontWeight: 800, letterSpacing: "0.2em", textTransform: "uppercase",
                 cursor: isStreaming ? "not-allowed" : "pointer",
                 display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-                transition: "background 0.2s",
+                borderRadius: 9, transition: "all 0.2s",
+                boxShadow: isStreaming ? "none" : `0 4px 16px ${BLUE}40`,
             }}>
                 {isStreaming
                     ? <><Loader2 size={15} style={{ animation: "spin 1s linear infinite" }} /> Streaming...</>
@@ -405,16 +417,24 @@ function JsonInputMode({ onSubmit, isStreaming }) {
 
 export default function TwinInputPanel({ inputMode, setInputMode, onSubmit, isStreaming }) {
     return (
-        <div style={{ background: C.surface, border: `1px solid ${C.border}` }}>
-            <div style={{ display: "flex", borderBottom: `1px solid ${C.border}` }}>
-                {[{ id: "form", icon: FormInput, label: "Form Input" }, { id: "json", icon: FileJson, label: "Raw JSON" }].map(tab => (
+        <div style={{
+            background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 12,
+            position: "sticky", top: 72,
+            maxHeight: "calc(100vh - 88px)", overflowY: "auto",
+        }}>
+            {/* Tabs */}
+            <div style={{ display: "flex", borderBottom: `1px solid ${BORDER}` }}>
+                {[
+                    { id: "form", icon: FormInput, label: "Form Input" },
+                    { id: "json", icon: FileJson,  label: "Raw JSON"   },
+                ].map(tab => (
                     <button key={tab.id} onClick={() => setInputMode(tab.id)} style={{
                         flex: 1, padding: "12px 0", border: "none", cursor: "pointer",
                         fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase",
                         display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-                        background:   inputMode === tab.id ? C.blue : "transparent",
-                        color:        inputMode === tab.id ? "#fff"  : C.muted,
-                        borderBottom: inputMode === tab.id ? `2px solid ${C.blue}` : "2px solid transparent",
+                        background:   inputMode === tab.id ? `${BLUE}15` : "transparent",
+                        color:        inputMode === tab.id ? BLUE : MUTED,
+                        borderBottom: inputMode === tab.id ? `2px solid ${BLUE}` : "2px solid transparent",
                         transition: "all 0.2s",
                     }}>
                         <tab.icon size={13} /> {tab.label}

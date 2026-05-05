@@ -1,29 +1,52 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { GitBranch, ArrowLeft, ChevronRight, Wifi } from "lucide-react";
+import { GitBranch, ArrowLeft, ChevronRight, Wifi, Loader2 } from "lucide-react";
 import ThemeToggle from "../components/theme/ThemeToggle";
 import DigitalTwinHistory from "../components/history/DigitalTwinHistory";
 import TwinInputPanel from "../components/agents/twin/TwinInputPanel";
 import TwinResultsPanel from "../components/agents/twin/TwinResultsPanel";
 
-const C = {
-    bg: "var(--color-bg)", surface: "var(--color-surface)", border: "var(--color-border)",
-    text: "var(--color-text)", muted: "var(--color-text-subtle)", dim: "var(--color-border)",
-    accent: "#3B82F6",
-};
+// ── Color tokens ──────────────────────────────────────────────────────────────
+const BG      = "var(--color-bg)";
+const SURFACE = "var(--color-surface)";
+const BORDER  = "var(--color-border)";
+const TEXT    = "var(--color-text)";
+const MUTED   = "var(--color-text-muted)";
+const SUBTLE  = "var(--color-text-subtle)";
+const BLUE    = "#3B82F6";
+
+const GLOBAL_STYLES = `
+    @keyframes spin    { to { transform: rotate(360deg); } }
+    @keyframes pulse   { 0%,100%{ opacity:1 } 50%{ opacity:.4 } }
+    @keyframes fadeIn  { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
+    * { box-sizing: border-box; }
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 4px; }
+    select option { background: var(--color-bg); color: var(--color-text); }
+    input[type=date]::-webkit-calendar-picker-indicator { filter: invert(0.5); }
+    input:focus, textarea:focus, select:focus { border-color: #3B82F6 !important; outline: none; }
+    input::placeholder, textarea::placeholder { color: var(--color-text-subtle); opacity: 0.7; }
+`;
+
+const BREADCRUMBS = [
+    { label: "Dashboard",     path: "/dashboard" },
+    { label: "Microservices", path: "/dashboard/microservices" },
+];
 
 export default function DigitalTwinAgent() {
     const navigate = useNavigate();
 
-    const [inputMode,    setInputMode]    = useState("form");
-    const [isStreaming,  setIsStreaming]  = useState(false);
-    const [streamEvents, setStreamEvents] = useState([]);
-    const [finalResult,  setFinalResult]  = useState(null);
-    const [currentStep,  setCurrentStep]  = useState(null);
-    const [error,        setError]        = useState(null);
-    const [liveText,     setLiveText]     = useState("");
-    const [copied,       setCopied]       = useState(false);
-    const [expandedScen, setExpandedScen] = useState(null);
+    const [inputMode,     setInputMode]    = useState("form");
+    const [isStreaming,   setIsStreaming]  = useState(false);
+    const [streamEvents,  setStreamEvents] = useState([]);
+    const [finalResult,   setFinalResult]  = useState(null);
+    const [partialResult, setPartialResult] = useState(null);
+    const [currentStep,   setCurrentStep]  = useState(null);
+    const [error,         setError]        = useState(null);
+    const [liveText,      setLiveText]     = useState("");
+    const [copied,        setCopied]       = useState(false);
+    const [expandedScen,  setExpandedScen] = useState(null);
 
     const abortControllerRef = useRef(null);
     const eventsEndRef       = useRef(null);
@@ -32,9 +55,27 @@ export default function DigitalTwinAgent() {
         if (isStreaming) eventsEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [streamEvents, isStreaming]);
 
+    // Attempt to extract partial fields from streaming JSON
+    useEffect(() => {
+        if (!isStreaming || !liveText || finalResult) return;
+        try {
+            const partial = {};
+            const summaryMatch = liveText.match(/"patient_risk_profile"\s*:\s*"([^"]+)"/);
+            const recMatch     = liveText.match(/"recommended_option"\s*:\s*"([^"]+)"/);
+            if (summaryMatch || recMatch) {
+                partial.simulation_summary = {
+                    patient_risk_profile: summaryMatch ? summaryMatch[1] : "…",
+                    recommended_option:   recMatch     ? recMatch[1]     : "…",
+                };
+            }
+            if (Object.keys(partial).length > 0) setPartialResult(partial);
+        } catch { }
+    }, [liveText, isStreaming, finalResult]);
+
     const handleReset = () => {
-        setStreamEvents([]); setFinalResult(null); setCurrentStep(null);
-        setError(null); setLiveText(""); setCopied(false); setExpandedScen(null);
+        setStreamEvents([]); setFinalResult(null); setPartialResult(null);
+        setCurrentStep(null); setError(null); setLiveText(""); setCopied(false);
+        setExpandedScen(null);
     };
 
     const handleCopy = () => {
@@ -48,17 +89,17 @@ export default function DigitalTwinAgent() {
         setIsStreaming(false);
     };
 
-    const runSimulation = async (payload) => {
+    const runSimulation = useCallback(async (payload) => {
         handleReset();
         setIsStreaming(true);
         abortControllerRef.current = new AbortController();
 
         try {
             const response = await fetch("http://127.0.0.1:8006/stream", {
-                method: "POST",
+                method:  "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload),
-                signal: abortControllerRef.current.signal,
+                body:    JSON.stringify(payload),
+                signal:  abortControllerRef.current.signal,
             });
             if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
 
@@ -87,129 +128,123 @@ export default function DigitalTwinAgent() {
                             if (event.type === "complete") { setFinalResult(event.data); setCurrentStep(null); setIsStreaming(false); }
                             if (event.type === "error")    { setError(event.message); if (event.fatal) setIsStreaming(false); }
                         }
-                    } catch { /* ignore */ }
+                    } catch { }
                 }
             }
         } catch (err) {
             if (err.name !== "AbortError") { setError(err.message); setIsStreaming(false); }
         }
-    };
+    }, []);
 
-    const result      = finalResult;
-    const summary     = result?.simulation_summary;
-    const scenarios   = result?.scenarios || [];
-    const attribution = result?.feature_attribution || [];
-    const sensitivity = result?.sensitivity_analysis || [];
-    const costEff     = result?.cost_effectiveness_summary;
-    const recommendedId = summary?.recommended_option;
+    const displayResult = finalResult || partialResult;
+    const isFinal = !!finalResult;
 
     return (
-        <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
-            <style>{`
-                @keyframes spin  { to { transform: rotate(360deg); } }
-                @keyframes pulse { 0%,100%{ opacity:1 } 50%{ opacity:.4 } }
-                * { box-sizing: border-box; }
-                ::-webkit-scrollbar       { width: 4px; height: 4px; }
-                ::-webkit-scrollbar-track { background: var(--color-surface); }
-                ::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 2px; }
-                select option             { background: var(--color-bg); color: var(--color-text); }
-                input[type=date]::-webkit-calendar-picker-indicator { filter: invert(0.5); }
-            `}</style>
+        <div style={{ minHeight: "100vh", background: BG, color: TEXT, fontFamily: "'Space Grotesk', system-ui, sans-serif" }}>
+            <style>{GLOBAL_STYLES}</style>
 
-            {/* Sticky Nav */}
-            <div style={{
-                position: "sticky", top: 0, zIndex: 50,
-                background: `color-mix(in srgb, ${C.bg} 92%, transparent)`,
-                backdropFilter: "blur(12px)",
-                borderBottom: `1px solid ${C.border}`,
+            {/* ── Sticky nav ── */}
+            <nav style={{
+                position: "sticky", top: 0, zIndex: 50, height: 56,
+                background: "color-mix(in srgb, var(--color-bg) 90%, transparent)",
+                backdropFilter: "blur(16px)", borderBottom: `1px solid ${BORDER}`,
                 display: "flex", alignItems: "center", justifyContent: "space-between",
-                padding: "0 24px", height: 56,
+                padding: "0 24px",
             }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                     <button
                         onClick={() => navigate("/dashboard/microservices")}
                         style={{
-                            background: "none", border: `1px solid ${C.border}`,
-                            color: C.muted, padding: "5px 10px", cursor: "pointer",
-                            display: "flex", alignItems: "center", gap: 5, fontSize: 11,
-                            fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase",
-                            transition: "color 0.2s, border-color 0.2s",
+                            background: "none", border: `1px solid ${BORDER}`, color: SUBTLE,
+                            borderRadius: 7, padding: "5px 12px", cursor: "pointer",
+                            display: "flex", alignItems: "center", gap: 6,
+                            fontSize: 11, fontWeight: 700, letterSpacing: "0.1em",
+                            textTransform: "uppercase", transition: "all 0.2s",
                         }}
-                        onMouseEnter={e => { e.currentTarget.style.color = C.text; e.currentTarget.style.borderColor = C.muted; }}
-                        onMouseLeave={e => { e.currentTarget.style.color = C.muted; e.currentTarget.style.borderColor = C.border; }}
+                        onMouseEnter={e => { e.currentTarget.style.color = TEXT; e.currentTarget.style.borderColor = MUTED; }}
+                        onMouseLeave={e => { e.currentTarget.style.color = SUBTLE; e.currentTarget.style.borderColor = BORDER; }}
                     >
                         <ArrowLeft size={11} /> Back
                     </button>
-                    <div style={{ width: 1, height: 20, background: C.border }} />
-                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                        <div style={{ width: 26, height: 26, background: C.accent, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, borderRadius: 4 }}>
-                            <span style={{ color: "#fff", fontSize: 9, fontWeight: 900 }}>MT</span>
+
+                    <div style={{ width: 1, height: 20, background: BORDER }} />
+
+                    <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                        <div style={{ width: 24, height: 24, background: BLUE, borderRadius: 5, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                            <span style={{ color: "#fff", fontSize: 8, fontWeight: 900 }}>MT</span>
                         </div>
-                        {[
-                            { label: "MediTwin AI",   path: "/" },
-                            { label: "Dashboard",     path: "/dashboard" },
-                            { label: "Microservices", path: "/dashboard/microservices" },
-                        ].map(crumb => (
-                            <span key={crumb.path} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                                <ChevronRight size={10} color={C.muted} style={{ opacity: 0.5 }} />
-                                <button onClick={() => navigate(crumb.path)} style={{
-                                    background: "none", border: "none", cursor: "pointer",
-                                    fontSize: 11, fontWeight: 700, letterSpacing: "0.12em",
-                                    textTransform: "uppercase", color: C.muted, transition: "color 0.2s", padding: 0,
-                                }}
-                                    onMouseEnter={e => e.currentTarget.style.color = C.text}
-                                    onMouseLeave={e => e.currentTarget.style.color = C.muted}
-                                >{crumb.label}</button>
+                        {BREADCRUMBS.map(c => (
+                            <span key={c.path} style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                                <ChevronRight size={10} color={SUBTLE} />
+                                <button
+                                    onClick={() => navigate(c.path)}
+                                    style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, fontWeight: 600, color: SUBTLE, padding: 0, transition: "color 0.2s" }}
+                                    onMouseEnter={e => e.currentTarget.style.color = TEXT}
+                                    onMouseLeave={e => e.currentTarget.style.color = SUBTLE}
+                                >{c.label}</button>
                             </span>
                         ))}
-                        <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                            <ChevronRight size={10} color={C.muted} style={{ opacity: 0.5 }} />
-                            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: C.text }}>
-                                Digital Twin Agent
-                            </span>
-                        </span>
+                        <ChevronRight size={10} color={SUBTLE} />
+                        <span style={{ fontSize: 11, fontWeight: 700, color: TEXT }}>Digital Twin Agent</span>
                     </div>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, border: `1px solid ${C.border}`, padding: "4px 10px", fontSize: 11 }}>
-                        <Wifi size={11} color={C.accent} />
-                        <span style={{ color: C.muted, fontFamily: "monospace" }}>:8006</span>
+
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <div style={{
+                        display: "flex", alignItems: "center", gap: 5,
+                        background: SURFACE, border: `1px solid ${BORDER}`,
+                        borderRadius: 7, padding: "4px 10px",
+                    }}>
+                        <Wifi size={10} color={BLUE} />
+                        <span style={{ fontSize: 11, color: MUTED, fontFamily: "monospace" }}>:8006</span>
                     </div>
-                    <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", padding: "4px 10px", border: `1px solid ${C.border}`, color: C.accent }}>
-                        A2A
-                    </div>
+                    <div style={{
+                        fontSize: 10, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase",
+                        padding: "4px 10px", border: `1px solid ${BLUE}40`, borderRadius: 7,
+                        color: BLUE, background: `${BLUE}0E`,
+                    }}>A2A</div>
                     <ThemeToggle />
                 </div>
-            </div>
+            </nav>
 
-            {/* Page Header */}
-            <div style={{ background: C.surface, borderBottom: `1px solid ${C.border}`, padding: "20px 24px" }}>
-                <div style={{ maxWidth: 1400, margin: "0 auto" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 6 }}>
-                        <div style={{ width: 38, height: 38, background: `${C.accent}20`, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 4, position: "relative", overflow: "hidden" }}>
-                            <GitBranch size={18} color={C.accent} strokeWidth={1.75} />
-                            {isStreaming && (
-                                <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 2, background: C.accent, animation: "pulse 1s infinite" }} />
-                            )}
+            {/* ── Agent hero ── */}
+            <div style={{ background: SURFACE, borderBottom: `1px solid ${BORDER}`, position: "relative", overflow: "hidden" }}>
+                <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, ${BLUE}, rgba(59,130,246,0.3))` }} />
+                <div style={{ position: "absolute", top: -60, right: -60, width: 280, height: 280, borderRadius: "50%", background: `radial-gradient(circle, ${BLUE}10 0%, transparent 70%)`, pointerEvents: "none" }} />
+
+                <div style={{ maxWidth: 1400, margin: "0 auto", padding: "28px 24px", position: "relative" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                        <div style={{
+                            width: 52, height: 52, borderRadius: 14, flexShrink: 0,
+                            background: `linear-gradient(135deg, ${BLUE} 0%, rgba(59,130,246,0.55) 100%)`,
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            boxShadow: `0 8px 24px ${BLUE}30`,
+                        }}>
+                            <GitBranch size={22} color="#fff" strokeWidth={1.75} />
                         </div>
+
                         <div>
-                            <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: C.muted, margin: 0 }}>Agent 06</p>
-                            <h1 style={{ fontSize: 22, fontWeight: 900, letterSpacing: "-0.02em", textTransform: "uppercase", color: C.text, margin: 0, lineHeight: 1.1 }}>
-                                Digital Twin Agent
-                            </h1>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
+                                <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: BLUE }}>Agent 06</span>
+                                <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.15em", textTransform: "uppercase", color: BLUE, border: `1px solid ${BLUE}50`, background: `${BLUE}0E`, padding: "1px 6px", borderRadius: 4 }}>A2A</span>
+                                <span style={{ fontSize: 9, color: SUBTLE, fontFamily: "monospace", border: `1px solid ${BORDER}`, padding: "1px 6px", borderRadius: 4 }}>::8006</span>
+                                {isStreaming && (
+                                    <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10, fontWeight: 700, color: BLUE, letterSpacing: "0.1em", textTransform: "uppercase" }}>
+                                        <Loader2 size={10} style={{ animation: "spin 1s linear infinite" }} /> Streaming
+                                    </span>
+                                )}
+                            </div>
+                            <h1 style={{ fontSize: 26, fontWeight: 900, letterSpacing: "-0.02em", color: TEXT, margin: 0, lineHeight: 1 }}>Digital Twin Agent</h1>
+                            <p style={{ fontSize: 13, color: MUTED, margin: "6px 0 0", maxWidth: 620 }}>
+                                XGBoost risk prediction engine with SHAP attribution and Monte-Carlo uncertainty. Simulates treatment scenarios, runs sensitivity and cost-effectiveness analysis — with streaming LLM clinical narrative.
+                            </p>
                         </div>
                     </div>
-                    <p style={{ fontSize: 13, color: C.muted, margin: 0, maxWidth: 700 }}>
-                        XGBoost risk prediction engine with uncertainty quantification. Simulates treatment scenarios, checks drug safety, runs sensitivity and cost-effectiveness analysis — with streaming LLM clinical narrative.
-                    </p>
                 </div>
             </div>
 
-            {/* Main 2-col Grid */}
-            <div style={{
-                maxWidth: 1400, margin: "0 auto", padding: "20px 24px",
-                display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, alignItems: "start",
-            }}>
+            {/* ── Main 2-col grid ── */}
+            <div style={{ maxWidth: 1400, margin: "0 auto", padding: "20px 24px", display: "grid", gridTemplateColumns: "460px 1fr", gap: 16, alignItems: "start" }}>
                 <TwinInputPanel
                     inputMode={inputMode}
                     setInputMode={setInputMode}
@@ -224,8 +259,9 @@ export default function DigitalTwinAgent() {
                     eventsEndRef={eventsEndRef}
                     liveText={liveText}
                     finalResult={finalResult}
-                    displayResult={finalResult}
-                    isFinal={!!finalResult}
+                    partialResult={partialResult}
+                    displayResult={displayResult}
+                    isFinal={isFinal}
                     expandedScen={expandedScen}
                     setExpandedScen={setExpandedScen}
                     handleCopy={handleCopy}
@@ -234,12 +270,12 @@ export default function DigitalTwinAgent() {
                 />
             </div>
 
-            {/* History */}
-            <div style={{ maxWidth: 1400, margin: "0 auto 40px", padding: "0 24px" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, paddingTop: 24, borderTop: `1px solid ${C.border}` }}>
-                    <div style={{ flex: 1, height: 1, background: C.border }} />
-                    <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.25em", textTransform: "uppercase", color: C.muted, padding: "0 12px" }}>Fetch History</span>
-                    <div style={{ flex: 1, height: 1, background: C.border }} />
+            {/* ── Digital Twin History ── */}
+            <div style={{ maxWidth: 1400, margin: "0 auto 48px", padding: "0 24px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16, paddingTop: 24, borderTop: `1px solid ${BORDER}` }}>
+                    <div style={{ flex: 1, height: 1, background: BORDER }} />
+                    <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.24em", textTransform: "uppercase", color: SUBTLE }}>Digital Twin History</span>
+                    <div style={{ flex: 1, height: 1, background: BORDER }} />
                 </div>
                 <DigitalTwinHistory defaultPatientId="" />
             </div>

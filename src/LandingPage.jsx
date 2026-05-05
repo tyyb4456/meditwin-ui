@@ -40,6 +40,17 @@ function useCounter(target, active, ms = 1400) {
   return val;
 }
 
+function useWindowWidth() {
+  const [width, setWidth] = useState(window.innerWidth);
+  useEffect(() => {
+    const handler = () => setWidth(window.innerWidth);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
+  return width;
+}
+
+
 const agents = [
   { id: 1, name: "Patient Context", icon: User, desc: "FHIR R4 data ingestion & normalisation", tag: "A2A", input: "Patient ID + SHARP context headers", output: "Normalized FHIR R4 resource bundle", tech: "httpx async + fhirclient", note: "Injects context into all downstream agents via A2A headers." },
   { id: 2, name: "Diagnosis", icon: Microscope, desc: "RAG-based differential diagnosis engine", tag: "A2A", input: "Symptoms, history, lab flags", output: "Ranked differential diagnoses (top 5)", tech: "LangChain + ChromaDB", note: "Retrieves from medical knowledge base; runs concurrently with Lab Analysis." },
@@ -174,6 +185,7 @@ function StatItem({ val, label, active, delay = 0 }) {
 }
 
 export default function LandingPage() {
+  const width = useWindowWidth();
   const navigate = useNavigate();
   const { theme } = useTheme();
   const isDark = theme === "dark";
@@ -283,147 +295,222 @@ export default function LandingPage() {
         </div>
       </nav>
 
-      {/* ══════════════════════════════════════════
-          HERO
-      ══════════════════════════════════════════ */}
-      <section style={{ background: heroBg, minHeight: "100vh", position: "relative", overflow: "hidden", display: "flex", alignItems: "center", paddingTop: 64 }}>
+ {/* ══════════════════════════════════════════
+    HERO
+══════════════════════════════════════════ */}
+<section style={{
+  background: heroBg, minHeight: "100vh", position: "relative",
+  overflow: "hidden", display: "flex", alignItems: "center", paddingTop: 64,
+}}>
 
-        {/* Animated grid overlay */}
-        <div style={{
-          position: "absolute", inset: 0, pointerEvents: "none",
-          backgroundImage: "linear-gradient(rgba(129,140,248,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(129,140,248,0.05) 1px, transparent 1px)",
-          backgroundSize: "64px 64px", animation: "gridShift 28s linear infinite",
-        }} />
+  {/* Animated grid overlay */}
+  <div style={{
+    position: "absolute", inset: 0, pointerEvents: "none",
+    backgroundImage: "linear-gradient(rgba(129,140,248,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(129,140,248,0.05) 1px, transparent 1px)",
+    backgroundSize: "64px 64px", animation: "gridShift 28s linear infinite",
+  }} />
 
-        {/* Radial glow */}
-        <div style={{
-          position: "absolute", top: "20%", right: "15%", width: 500, height: 500,
-          borderRadius: "50%", background: "radial-gradient(circle, rgba(129,140,248,0.15) 0%, transparent 70%)",
-          pointerEvents: "none", animation: "glow-pulse 6s ease-in-out infinite",
-        }} />
+  {/* Radial glow */}
+  <div style={{
+    position: "absolute", top: "20%", right: "15%", width: 500, height: 500,
+    borderRadius: "50%", background: "radial-gradient(circle, rgba(129,140,248,0.15) 0%, transparent 70%)",
+    pointerEvents: "none", animation: "glow-pulse 6s ease-in-out infinite",
+  }} />
 
+  <div style={{
+    maxWidth: 1200, margin: "0 auto", width: "100%",
+    // ↓ Responsive padding: tighter on mobile
+    padding: width < 640 ? "60px 20px 48px" : width < 1024 ? "70px 32px 60px" : "80px 40px",
+    // ↓ Single column on mobile/tablet, two columns on desktop
+    display: "grid",
+    gridTemplateColumns: width < 1024 ? "1fr" : "1fr 1fr",
+    gap: width < 1024 ? 40 : 60,
+    alignItems: "center",
+    position: "relative", zIndex: 1,
+    opacity: heroVisible ? 1 : 0,
+    transform: heroVisible ? "translateY(0)" : "translateY(28px)",
+    transition: "opacity 0.9s cubic-bezier(0.22,1,0.36,1), transform 0.9s cubic-bezier(0.22,1,0.36,1)",
+  }}>
+
+    {/* LEFT — text */}
+    <div>
+      {/* Pills */}
+      <div style={{
+        display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 28,
+        animation: "fadeSlideUp 0.8s 0.1s both",
+        // ↓ Center pills on mobile
+        justifyContent: width < 1024 ? "center" : "flex-start",
+      }}>
+        {["✦ Multi-Agent", "✦ FHIR R4", "✦ Real-Time SSE"].map(p => (
+          <span key={p} style={{
+            padding: "5px 14px", borderRadius: 20,
+            border: "1px solid rgba(129,140,248,0.3)",
+            background: "var(--color-accent-dim)",
+            fontSize: 12, fontWeight: 500, color: "var(--color-text-muted)",
+          }}>
+            {p}
+          </span>
+        ))}
+      </div>
+
+      {/* Headline */}
+      <h1 style={{
+        fontSize: "clamp(36px,6vw,72px)", fontWeight: 700, lineHeight: 1.05,
+        letterSpacing: "-0.035em", color: "var(--color-text)", marginBottom: 20,
+        animation: "fadeSlideUp 0.9s 0.18s both",
+        // ↓ Center text on mobile
+        textAlign: width < 1024 ? "center" : "left",
+      }}>
+        Clinical AI That<br />
+        Thinks Like a<br />
+        <span style={{ color: "var(--color-accent)" }}>Medical Team</span>
+      </h1>
+
+      {/* Subtext */}
+      <p style={{
+        fontSize: 16, fontWeight: 400, lineHeight: 1.65, color: "var(--color-text-muted)",
+        // ↓ Full width + centered on mobile
+        maxWidth: width < 1024 ? "100%" : 460,
+        marginBottom: 36,
+        animation: "fadeSlideUp 0.9s 0.28s both",
+        textAlign: width < 1024 ? "center" : "left",
+      }}>
+        Eight specialist AI agents — from FHIR data ingestion to consensus diagnosis — working
+        in parallel to give every clinician a team of experts.
+      </p>
+
+      {/* CTAs */}
+      <div style={{
+        display: "flex", gap: 12, flexWrap: "wrap",
+        animation: "fadeSlideUp 0.9s 0.38s both",
+        // ↓ Center buttons on mobile
+        justifyContent: width < 1024 ? "center" : "flex-start",
+      }}>
+        <button
+          onClick={() => navigate("/dashboard")}
+          style={{
+            padding: "13px 28px", background: "var(--color-accent)", color: "#fff",
+            border: "none", borderRadius: 26, fontSize: 14, fontWeight: 600,
+            display: "flex", alignItems: "center", gap: 8, transition: "all 0.22s ease",
+            // ↓ Full width on small mobile
+            width: width < 480 ? "100%" : "auto",
+            justifyContent: "center",
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = "var(--color-accent-hover)"; e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 28px rgba(99,102,241,0.4)"; }}
+          onMouseLeave={e => { e.currentTarget.style.background = "var(--color-accent)"; e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}
+        >
+          Launch Demo <ArrowRight size={16} />
+        </button>
+        <button
+          onClick={() => scrollTo("pipeline-section", "pipeline")}
+          style={{
+            padding: "13px 28px", background: "var(--color-surface)", color: "var(--color-text-muted)",
+            border: "1px solid var(--color-border-strong)", borderRadius: 26, fontSize: 14, fontWeight: 500,
+            display: "flex", alignItems: "center", gap: 8, transition: "all 0.22s ease",
+            width: width < 480 ? "100%" : "auto",
+            justifyContent: "center",
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = "var(--color-surface-2)"; e.currentTarget.style.borderColor = "var(--color-accent)"; }}
+          onMouseLeave={e => { e.currentTarget.style.background = "var(--color-surface)"; e.currentTarget.style.borderColor = "var(--color-border-strong)"; }}
+        >
+          ▶ View Pipeline
+        </button>
+      </div>
+
+      {/* Stats */}
+      <div ref={statsRef} style={{
+        marginTop: 52, paddingTop: 36, borderTop: "1px solid var(--color-border)",
+        display: "grid",
+        // ↓ 3 cols on tablet+, 3 cols on mobile too but smaller gap
+        gridTemplateColumns: "repeat(3, 1fr)",
+        gap: width < 480 ? 12 : 24,
+      }}>
+        {[
+          { val: "8", label: "Specialist Agents" },
+          { val: "3", label: "Clinical Questions" },
+          { val: "FHIR R4", label: "Standards Compliant" },
+        ].map(({ val, label }, i) => (
+          <StatItem key={label} val={val} label={label} active={statsOn} delay={i * 110} />
+        ))}
+      </div>
+    </div>
+
+    {/* RIGHT — floating cards + image (hidden on mobile, shown on desktop) */}
+    {width >= 1024 && (
+      <div style={{ position: "relative", height: 520 }}>
+
+        {/* Doctor image */}
         <div style={{
-          maxWidth: 1200, margin: "0 auto", width: "100%", padding: "80px 40px",
-          display: "grid", gridTemplateColumns: "1fr 1fr", gap: 60, alignItems: "center",
-          position: "relative", zIndex: 1,
-          opacity: heroVisible ? 1 : 0, transform: heroVisible ? "translateY(0)" : "translateY(28px)",
-          transition: "opacity 0.9s cubic-bezier(0.22,1,0.36,1), transform 0.9s cubic-bezier(0.22,1,0.36,1)",
+          position: "absolute", inset: 0, borderRadius: 20, overflow: "hidden",
+          border: "1px solid rgba(129,140,248,0.2)",
+          boxShadow: isDark ? "0 24px 64px rgba(0,0,0,0.6)" : "0 24px 64px rgba(129,140,248,0.15)",
         }}>
-
-          {/* LEFT — text */}
-          <div>
-            {/* Pills */}
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 28, animation: "fadeSlideUp 0.8s 0.1s both" }}>
-              {["✦ Multi-Agent", "✦ FHIR R4", "✦ Real-Time SSE"].map(p => (
-                <span key={p} style={{
-                  padding: "5px 14px", borderRadius: 20,
-                  border: "1px solid rgba(129,140,248,0.3)",
-                  background: "var(--color-accent-dim)",
-                  fontSize: 12, fontWeight: 500, color: "var(--color-text-muted)",
-                }}>
-                  {p}
-                </span>
-              ))}
-            </div>
-
-            {/* Headline */}
-            <h1 style={{
-              fontSize: "clamp(42px,6vw,72px)", fontWeight: 700, lineHeight: 1.05,
-              letterSpacing: "-0.035em", color: "var(--color-text)", marginBottom: 20,
-              animation: "fadeSlideUp 0.9s 0.18s both",
-            }}>
-              Clinical AI That<br />
-              Thinks Like a<br />
-              <span style={{ color: "var(--color-accent)" }}>Medical Team</span>
-            </h1>
-
-            {/* Subtext */}
-            <p style={{
-              fontSize: 16, fontWeight: 400, lineHeight: 1.65, color: "var(--color-text-muted)",
-              maxWidth: 460, marginBottom: 36,
-              animation: "fadeSlideUp 0.9s 0.28s both",
-            }}>
-              Eight specialist AI agents — from FHIR data ingestion to consensus diagnosis — working in parallel to give every clinician a team of experts.
-            </p>
-
-            {/* CTAs */}
-            <div style={{ display: "flex", gap: 12, flexWrap: "wrap", animation: "fadeSlideUp 0.9s 0.38s both" }}>
-              <button
-                onClick={() => navigate("/dashboard")}
-                style={{
-                  padding: "13px 28px", background: "var(--color-accent)", color: "#fff",
-                  border: "none", borderRadius: 26, fontSize: 14, fontWeight: 600,
-                  display: "flex", alignItems: "center", gap: 8, transition: "all 0.22s ease",
-                }}
-                onMouseEnter={e => { e.currentTarget.style.background = "var(--color-accent-hover)"; e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 28px rgba(99,102,241,0.4)"; }}
-                onMouseLeave={e => { e.currentTarget.style.background = "var(--color-accent)"; e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}
-              >
-                Launch Demo <ArrowRight size={16} />
-              </button>
-              <button
-                onClick={() => scrollTo("pipeline-section", "pipeline")}
-                style={{
-                  padding: "13px 28px", background: "var(--color-surface)", color: "var(--color-text-muted)",
-                  border: "1px solid var(--color-border-strong)", borderRadius: 26, fontSize: 14, fontWeight: 500,
-                  display: "flex", alignItems: "center", gap: 8, transition: "all 0.22s ease",
-                }}
-                onMouseEnter={e => { e.currentTarget.style.background = "var(--color-surface-2)"; e.currentTarget.style.borderColor = "var(--color-accent)"; }}
-                onMouseLeave={e => { e.currentTarget.style.background = "var(--color-surface)"; e.currentTarget.style.borderColor = "var(--color-border-strong)"; }}
-              >
-                ▶ View Pipeline
-              </button>
-            </div>
-
-            {/* Stats */}
-            <div ref={statsRef} style={{
-              marginTop: 52, paddingTop: 36, borderTop: "1px solid var(--color-border)",
-              display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 24,
-            }}>
-              {[
-                { val: "8", label: "Specialist Agents" },
-                { val: "3", label: "Clinical Questions" },
-                { val: "FHIR R4", label: "Standards Compliant" },
-              ].map(({ val, label }, i) => (
-                <StatItem key={label} val={val} label={label} active={statsOn} delay={i * 110} />
-              ))}
-            </div>
-          </div>
-
-          {/* RIGHT — floating cards + image */}
-          <div style={{ position: "relative", height: 520 }}>
-
-            {/* Doctor image */}
-            <div style={{
-              position: "absolute", inset: 0, borderRadius: 20, overflow: "hidden",
-              border: "1px solid rgba(129,140,248,0.2)",
-              boxShadow: isDark ? "0 24px 64px rgba(0,0,0,0.6)" : "0 24px 64px rgba(129,140,248,0.15)",
-            }}>
-              <img
-                src="/hero-doctor.png" alt="Clinical AI"
-                style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top", filter: isDark ? "brightness(0.55) saturate(0.8)" : "brightness(0.85) saturate(0.9)" }}
-              />
-              <div style={{ position: "absolute", inset: 0, background: isDark ? "linear-gradient(to bottom, transparent 40%, rgba(8,6,26,0.85) 100%)" : "linear-gradient(to bottom, transparent 40%, rgba(245,244,255,0.75) 100%)" }} />
-            </div>
-
-            {/* Floating card 1 — top right */}
-            <div style={{ position: "absolute", top: 24, right: -20, zIndex: 10, animation: "fadeSlideRight 0.8s 0.6s both" }}>
-              <LiveAnalysisCard />
-            </div>
-
-            {/* Floating card 2 — bottom left */}
-            <div style={{ position: "absolute", bottom: 32, left: -16, zIndex: 10, animation: "fadeSlideUp 0.8s 0.8s both" }}>
-              <PatientCard />
-            </div>
-          </div>
+          <img
+            src="/hero-doctor.png" alt="Clinical AI"
+            style={{
+              width: "100%", height: "100%", objectFit: "cover",
+              objectPosition: "center top",
+              filter: isDark ? "brightness(0.55) saturate(0.8)" : "brightness(0.85) saturate(0.9)",
+            }}
+          />
+          <div style={{
+            position: "absolute", inset: 0,
+            background: isDark
+              ? "linear-gradient(to bottom, transparent 40%, rgba(8,6,26,0.85) 100%)"
+              : "linear-gradient(to bottom, transparent 40%, rgba(245,244,255,0.75) 100%)",
+          }} />
         </div>
 
-        {/* Bottom fade into next section */}
+        {/* Floating card 1 — top right */}
+        <div style={{ position: "absolute", top: 24, right: -20, zIndex: 10, animation: "fadeSlideRight 0.8s 0.6s both" }}>
+          <LiveAnalysisCard />
+        </div>
+
+        {/* Floating card 2 — bottom left */}
+        <div style={{ position: "absolute", bottom: 32, left: -16, zIndex: 10, animation: "fadeSlideUp 0.8s 0.8s both" }}>
+          <PatientCard />
+        </div>
+      </div>
+    )}
+
+    {/* RIGHT — compact image banner shown only on tablet (640–1023px) */}
+    {width >= 640 && width < 1024 && (
+      <div style={{
+        position: "relative", height: 280, borderRadius: 16, overflow: "hidden",
+        border: "1px solid rgba(129,140,248,0.2)",
+        boxShadow: isDark ? "0 16px 48px rgba(0,0,0,0.5)" : "0 16px 48px rgba(129,140,248,0.12)",
+      }}>
+        <img
+          src="/hero-doctor.png" alt="Clinical AI"
+          style={{
+            width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top",
+            filter: isDark ? "brightness(0.55) saturate(0.8)" : "brightness(0.85) saturate(0.9)",
+          }}
+        />
         <div style={{
-          position: "absolute", bottom: 0, left: 0, right: 0, height: 100,
-          background: "linear-gradient(to bottom, transparent, var(--color-bg))",
-          pointerEvents: "none",
+          position: "absolute", inset: 0,
+          background: isDark
+            ? "linear-gradient(to bottom, transparent 40%, rgba(8,6,26,0.85) 100%)"
+            : "linear-gradient(to bottom, transparent 40%, rgba(245,244,255,0.75) 100%)",
         }} />
-      </section>
+        {/* Floating cards tucked inside on tablet — no negative overflow */}
+        <div style={{ position: "absolute", top: 16, right: 16, zIndex: 10 }}>
+          <LiveAnalysisCard />
+        </div>
+        <div style={{ position: "absolute", bottom: 16, left: 16, zIndex: 10 }}>
+          <PatientCard />
+        </div>
+      </div>
+    )}
+  </div>
+
+  {/* Bottom fade into next section */}
+  <div style={{
+    position: "absolute", bottom: 0, left: 0, right: 0, height: 100,
+    background: "linear-gradient(to bottom, transparent, var(--color-bg))",
+    pointerEvents: "none",
+  }} />
+</section>
 
       {/* ══════════════════════════════════════════
           FEATURES

@@ -1,22 +1,28 @@
 import { useState } from "react";
 import { FileJson, FormInput, Play, AlertCircle, Loader2, Plus, Trash2 } from "lucide-react";
 
-const C = {
-    bg: "var(--color-bg)", surface: "var(--color-surface)", border: "var(--color-border)",
-    accent: "#06B6D4", text: "var(--color-text)", muted: "var(--color-text-subtle)",
-    dim: "var(--color-border)", red: "#EF4444", cyan: "#06B6D4",
-};
+const BG      = "var(--color-bg)";
+const SURFACE = "var(--color-surface)";
+const SURFACE2 = "var(--color-surface-2)";
+const BORDER  = "var(--color-border)";
+const TEXT    = "var(--color-text)";
+const MUTED   = "var(--color-text-muted)";
+const SUBTLE  = "var(--color-text-subtle)";
+const RED     = "#EF4444";
+const CYAN    = "#06B6D4";
 
 const inputStyle = {
-    width: "100%", background: C.bg, border: `1px solid ${C.border}`,
-    color: C.text, padding: "8px 10px", fontSize: 13, outline: "none",
-    fontFamily: "inherit", borderRadius: 0,
+    width: "100%", background: BG, border: `1px solid ${BORDER}`,
+    color: TEXT, padding: "9px 12px", fontSize: 13, outline: "none",
+    fontFamily: "inherit", borderRadius: 8, transition: "border-color 0.2s",
 };
+
 const labelStyle = {
     display: "block", fontSize: 10, fontWeight: 700,
-    letterSpacing: "0.15em", textTransform: "uppercase",
-    color: C.muted, marginBottom: 6,
+    letterSpacing: "0.14em", textTransform: "uppercase",
+    color: SUBTLE, marginBottom: 6,
 };
+
 function Field({ label, children }) {
     return <div><label style={labelStyle}>{label}</label>{children}</div>;
 }
@@ -63,16 +69,10 @@ function FormInputMode({ onSubmit, isStreaming }) {
         const lab_results = labRows
             .filter(r => r.loinc && r.value)
             .map(r => ({ loinc: r.loinc.trim(), value: parseFloat(r.value) }));
-
-        const patient_state = {
-            patient_id: patientId,
-            demographics: { age: parseInt(age), gender },
-            lab_results,
-        };
+        const patient_state = { patient_id: patientId, demographics: { age: parseInt(age), gender }, lab_results };
         const diagnosis_agent_output = (topDx || topIcd)
             ? { top_diagnosis: topDx, top_icd10_code: topIcd }
             : null;
-
         onSubmit(patient_state, diagnosis_agent_output);
     };
 
@@ -88,7 +88,7 @@ function FormInputMode({ onSubmit, isStreaming }) {
             </div>
 
             <Field label="Gender">
-                <select style={inputStyle} value={gender} onChange={e => setGender(e.target.value)}>
+                <select style={{ ...inputStyle, appearance: "none" }} value={gender} onChange={e => setGender(e.target.value)}>
                     <option value="male">Male</option>
                     <option value="female">Female</option>
                     <option value="other">Other</option>
@@ -101,9 +101,10 @@ function FormInputMode({ onSubmit, isStreaming }) {
                     <label style={labelStyle}>Lab Results (LOINC + Value)</label>
                     <button type="button" onClick={addRow} style={{
                         display: "flex", alignItems: "center", gap: 4,
-                        background: "none", border: `1px solid ${C.cyan}`,
-                        color: C.cyan, padding: "3px 8px", cursor: "pointer",
-                        fontSize: 10, fontWeight: 700, letterSpacing: "0.1em",
+                        background: `${CYAN}0E`, border: `1px solid ${CYAN}50`,
+                        color: CYAN, padding: "3px 10px", cursor: "pointer",
+                        fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", borderRadius: 6,
+                        transition: "all 0.2s",
                     }}>
                         <Plus size={10} /> Add Row
                     </button>
@@ -125,18 +126,18 @@ function FormInputMode({ onSubmit, isStreaming }) {
                                 onChange={e => updateRow(i, "value", e.target.value)}
                             />
                             <input
-                                style={{ ...inputStyle, color: C.muted }}
+                                style={{ ...inputStyle, color: MUTED }}
                                 placeholder="Label (optional)"
                                 value={row.label || ""}
                                 onChange={e => updateRow(i, "label", e.target.value)}
                             />
                             <button type="button" onClick={() => removeRow(i)} style={{
                                 background: "none", border: "none", cursor: "pointer",
-                                color: C.muted, padding: 4, display: "flex", alignItems: "center",
+                                color: SUBTLE, padding: 4, display: "flex", alignItems: "center",
                                 transition: "color 0.2s",
                             }}
-                                onMouseEnter={e => e.currentTarget.style.color = C.red}
-                                onMouseLeave={e => e.currentTarget.style.color = C.muted}
+                                onMouseEnter={e => e.currentTarget.style.color = RED}
+                                onMouseLeave={e => e.currentTarget.style.color = SUBTLE}
                             >
                                 <Trash2 size={13} />
                             </button>
@@ -145,8 +146,8 @@ function FormInputMode({ onSubmit, isStreaming }) {
                 </div>
             </div>
 
-            <div style={{ padding: 12, background: `${C.cyan}08`, border: `1px solid ${C.cyan}30` }}>
-                <p style={{ ...labelStyle, color: C.cyan, margin: "0 0 10px" }}>Diagnosis Context (Optional)</p>
+            <div style={{ padding: 12, background: `${CYAN}08`, border: `1px solid ${CYAN}30`, borderRadius: 8 }}>
+                <p style={{ ...labelStyle, color: CYAN, margin: "0 0 10px" }}>Diagnosis Context (Optional)</p>
                 <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 12 }}>
                     <Field label="Top Diagnosis">
                         <input style={inputStyle} value={topDx} onChange={e => setTopDx(e.target.value)}
@@ -160,17 +161,18 @@ function FormInputMode({ onSubmit, isStreaming }) {
             </div>
 
             <button type="submit" disabled={isStreaming} style={{
-                width: "100%", padding: "11px 0",
-                background: isStreaming ? C.dim : C.cyan,
-                border: "none", color: isStreaming ? C.muted : "#fff",
+                width: "100%", padding: "12px 0",
+                background: isStreaming ? SURFACE2 : CYAN,
+                border: "none", color: "#fff", borderRadius: 8,
                 fontSize: 12, fontWeight: 800, letterSpacing: "0.2em", textTransform: "uppercase",
                 cursor: isStreaming ? "not-allowed" : "pointer",
                 display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-                transition: "background 0.2s",
+                transition: "all 0.2s",
+                boxShadow: isStreaming ? "none" : `0 4px 14px ${CYAN}35`,
             }}>
                 {isStreaming
-                    ? <><Loader2 size={15} style={{ animation: "spin 1s linear infinite" }} /> Streaming...</>
-                    : <><Play size={15} /> Run Lab Analysis</>}
+                    ? <><Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> Streaming...</>
+                    : <><Play size={14} /> Run Lab Analysis</>}
             </button>
         </form>
     );
@@ -202,23 +204,24 @@ function JsonInputMode({ onSubmit, isStreaming }) {
                 />
             </div>
             {error && (
-                <div style={{ padding: "10px 14px", background: `${C.red}12`, border: `1px solid ${C.red}40`, display: "flex", alignItems: "flex-start", gap: 8 }}>
-                    <AlertCircle size={14} color={C.red} style={{ flexShrink: 0, marginTop: 1 }} />
-                    <p style={{ fontSize: 12, color: C.red, margin: 0 }}>{error}</p>
+                <div style={{ padding: "10px 14px", background: `${RED}12`, border: `1px solid ${RED}40`, borderRadius: 8, display: "flex", alignItems: "flex-start", gap: 8 }}>
+                    <AlertCircle size={14} color={RED} style={{ flexShrink: 0, marginTop: 1 }} />
+                    <p style={{ fontSize: 12, color: RED, margin: 0 }}>{error}</p>
                 </div>
             )}
             <button type="submit" disabled={isStreaming} style={{
-                width: "100%", padding: "11px 0",
-                background: isStreaming ? C.dim : C.cyan,
-                border: "none", color: isStreaming ? C.muted : "#fff",
+                width: "100%", padding: "12px 0",
+                background: isStreaming ? SURFACE2 : CYAN,
+                border: "none", color: "#fff", borderRadius: 8,
                 fontSize: 12, fontWeight: 800, letterSpacing: "0.2em", textTransform: "uppercase",
                 cursor: isStreaming ? "not-allowed" : "pointer",
                 display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-                transition: "background 0.2s",
+                transition: "all 0.2s",
+                boxShadow: isStreaming ? "none" : `0 4px 14px ${CYAN}35`,
             }}>
                 {isStreaming
-                    ? <><Loader2 size={15} style={{ animation: "spin 1s linear infinite" }} /> Streaming...</>
-                    : <><Play size={15} /> Run Lab Analysis</>}
+                    ? <><Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> Streaming...</>
+                    : <><Play size={14} /> Run Lab Analysis</>}
             </button>
         </form>
     );
@@ -226,8 +229,12 @@ function JsonInputMode({ onSubmit, isStreaming }) {
 
 export default function LabInputPanel({ inputMode, setInputMode, onSubmit, isStreaming }) {
     return (
-        <div style={{ background: C.surface, border: `1px solid ${C.border}` }}>
-            <div style={{ display: "flex", borderBottom: `1px solid ${C.border}` }}>
+        <div style={{
+            background: SURFACE, border: `1px solid ${BORDER}`,
+            borderRadius: 12, overflow: "hidden", position: "sticky", top: 72,
+        }}>
+            {/* Mode tabs */}
+            <div style={{ display: "flex", borderBottom: `1px solid ${BORDER}` }}>
                 {[
                     { id: "form", icon: FormInput, label: "Form Input" },
                     { id: "json", icon: FileJson,  label: "Raw JSON" },
@@ -236,12 +243,12 @@ export default function LabInputPanel({ inputMode, setInputMode, onSubmit, isStr
                         key={tab.id}
                         onClick={() => setInputMode(tab.id)}
                         style={{
-                            flex: 1, padding: "12px 0", border: "none", cursor: "pointer",
+                            flex: 1, padding: "13px 0", border: "none", cursor: "pointer",
                             fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase",
-                            display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-                            background: inputMode === tab.id ? C.cyan : "transparent",
-                            color:      inputMode === tab.id ? "#fff"  : C.muted,
-                            borderBottom: inputMode === tab.id ? `2px solid ${C.cyan}` : "2px solid transparent",
+                            display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
+                            background: inputMode === tab.id ? `${CYAN}15` : "transparent",
+                            color:      inputMode === tab.id ? CYAN : SUBTLE,
+                            borderBottom: inputMode === tab.id ? `2px solid ${CYAN}` : "2px solid transparent",
                             transition: "all 0.2s",
                         }}
                     >
@@ -249,7 +256,8 @@ export default function LabInputPanel({ inputMode, setInputMode, onSubmit, isStr
                     </button>
                 ))}
             </div>
-            <div style={{ padding: 20 }}>
+
+            <div style={{ padding: 20, maxHeight: "calc(100vh - 200px)", overflowY: "auto" }}>
                 {inputMode === "form"
                     ? <FormInputMode onSubmit={onSubmit} isStreaming={isStreaming} />
                     : <JsonInputMode onSubmit={onSubmit} isStreaming={isStreaming} />}
