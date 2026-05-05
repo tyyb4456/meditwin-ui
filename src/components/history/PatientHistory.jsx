@@ -7,20 +7,18 @@ import {
     TrendingUp, Hash, Copy, Check
 } from "lucide-react";
 
-const C = {
-    bg: "var(--color-bg)",
-    panel: "var(--color-surface)",
-    card: "color-mix(in srgb, var(--color-surface) 60%, var(--color-bg))",
-    border: "var(--color-border)",
-    accent: "var(--color-accent)",
-    green: "#22C55E",
-    yellow: "#EAB308",
-    red: "#EF4444",
-    cyan: "#06B6D4",
-    text: "var(--color-text)",
-    muted: "var(--color-text-subtle)",
-    dim: "var(--color-border)",
-};
+const ACCENT  = "var(--color-accent)";
+const BG      = "var(--color-bg)";
+const SURFACE = "var(--color-surface)";
+const BORDER  = "var(--color-border)";
+const TEXT    = "var(--color-text)";
+const MUTED   = "var(--color-text-muted)";
+const SUBTLE  = "var(--color-text-subtle)";
+const GREEN   = "#22C55E";
+const AMBER   = "#F59E0B";
+const RED     = "#EF4444";
+const CYAN    = "#06B6D4";
+const CARD    = "color-mix(in srgb, var(--color-surface) 60%, var(--color-bg))";
 
 // ── Tiny helpers ────────────────────────────────────────────────────────────
 
@@ -28,18 +26,18 @@ function Label({ children }) {
     return (
         <p style={{
             fontSize: 10, fontWeight: 700, letterSpacing: "0.25em",
-            textTransform: "uppercase", color: C.muted, margin: "0 0 10px",
+            textTransform: "uppercase", color: MUTED, margin: "0 0 10px",
         }}>{children}</p>
     );
 }
 
 function MethodBadge({ method }) {
-    const colors = { GET: C.cyan, DELETE: C.red };
+    const colors = { GET: CYAN, DELETE: RED };
     return (
         <span style={{
             fontSize: 9, fontWeight: 800, letterSpacing: "0.12em",
-            color: colors[method] || C.muted,
-            border: `1px solid ${(colors[method] || C.muted)}40`,
+            color: colors[method] || MUTED,
+            border: `1px solid ${(colors[method] || MUTED)}40`,
             padding: "2px 6px", fontFamily: "monospace",
         }}>{method}</span>
     );
@@ -47,15 +45,15 @@ function MethodBadge({ method }) {
 
 function StatusBadge({ ok }) {
     return ok
-        ? <CheckCircle2 size={13} color={C.green} />
-        : <XCircle size={13} color={C.red} />;
+        ? <CheckCircle2 size={13} color={GREEN} />
+        : <XCircle size={13} color={RED} />;
 }
 
-function MiniStat({ label, value, color = C.text }) {
+function MiniStat({ label, value, color = TEXT }) {
     return (
         <div style={{ textAlign: "center" }}>
             <p style={{ fontSize: 18, fontWeight: 900, color, margin: 0, lineHeight: 1 }}>{value}</p>
-            <p style={{ fontSize: 9, color: C.muted, margin: "3px 0 0", letterSpacing: "0.1em", textTransform: "uppercase" }}>{label}</p>
+            <p style={{ fontSize: 9, color: MUTED, margin: "3px 0 0", letterSpacing: "0.1em", textTransform: "uppercase" }}>{label}</p>
         </div>
     );
 }
@@ -64,10 +62,10 @@ function MiniStat({ label, value, color = C.text }) {
 function EndpointTab({ active, onClick, method, path, label }) {
     return (
         <button onClick={onClick} style={{
-            background: active ? C.card : "none",
-            border: `1px solid ${active ? C.accent + "60" : C.border}`,
-            borderBottom: active ? `1px solid ${C.card}` : `1px solid ${C.border}`,
-            color: active ? C.text : C.muted,
+            background: active ? CARD : "none",
+            border: `1px solid ${active ? ACCENT + "60" : BORDER}`,
+            borderBottom: active ? `1px solid ${CARD}` : `1px solid ${BORDER}`,
+            color: active ? TEXT : MUTED,
             padding: "8px 14px", cursor: "pointer",
             display: "flex", alignItems: "center", gap: 7,
             fontSize: 11, fontWeight: active ? 700 : 500,
@@ -75,7 +73,7 @@ function EndpointTab({ active, onClick, method, path, label }) {
         }}>
             <MethodBadge method={method} />
             <span style={{ fontFamily: "monospace", fontSize: 10 }}>{path}</span>
-            <span style={{ fontSize: 10, color: C.muted, display: "none" }}>{label}</span>
+            <span style={{ fontSize: 10, color: MUTED, display: "none" }}>{label}</span>
         </button>
     );
 }
@@ -97,18 +95,18 @@ function RecordJsonPanel({ record }) {
             }}>
                 <Label>Raw Record JSON</Label>
                 <button onClick={handleCopy} style={{
-                    background: "none", border: `1px solid ${C.border}`, color: C.muted,
+                    background: "none", border: `1px solid ${BORDER}`, color: MUTED,
                     padding: "2px 7px", cursor: "pointer", display: "flex", alignItems: "center",
                     gap: 4, fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase",
                 }}>
                     {copied
-                        ? <><Check size={9} color={C.green} /> Copied</>
+                        ? <><Check size={9} color={GREEN} /> Copied</>
                         : <><Copy size={9} /> Copy</>}
                 </button>
             </div>
             <div style={{
                 flex: 1, overflow: "auto", background: "var(--color-bg)",
-                border: `1px solid ${C.border}`, padding: "10px 12px",
+                border: `1px solid ${BORDER}`, padding: "10px 12px",
                 fontFamily: "monospace", fontSize: 10, lineHeight: 1.6, color: "var(--color-text-subtle)",
                 maxHeight: 420,
             }}>
@@ -126,7 +124,7 @@ function HistoryRecordCard({ record, index }) {
 
     return (
         <div style={{
-            background: C.card, border: `1px solid ${C.border}`,
+            background: CARD, border: `1px solid ${BORDER}`,
             opacity: 0, animation: `fadeSlideIn 0.3s ease ${index * 0.05}s forwards`,
         }}>
             {/* ── Collapsed header ── */}
@@ -139,66 +137,66 @@ function HistoryRecordCard({ record, index }) {
                 }}
             >
                 <span style={{
-                    fontSize: 10, color: C.muted, fontFamily: "monospace",
+                    fontSize: 10, color: MUTED, fontFamily: "monospace",
                     minWidth: 22, textAlign: "right",
                 }}>#{record.id}</span>
 
                 <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                     <span style={{
-                        fontSize: 11, fontWeight: 700, color: C.text, fontFamily: "monospace",
+                        fontSize: 11, fontWeight: 700, color: TEXT, fontFamily: "monospace",
                     }}>{record.request_id}</span>
 
                     <span style={{
                         fontSize: 9, fontWeight: 700, letterSpacing: "0.1em",
-                        color: record.source === "SHARP" ? C.accent : C.cyan,
-                        border: `1px solid ${record.source === "SHARP" ? C.accent : C.cyan}40`,
+                        color: record.source === "SHARP" ? ACCENT : CYAN,
+                        border: `1px solid ${record.source === "SHARP" ? ACCENT : CYAN}40`,
                         padding: "1px 5px",
                     }}>{record.source}</span>
 
                     {record.cache_hit && (
                         <span style={{
-                            fontSize: 9, fontWeight: 700, color: C.yellow,
-                            border: `1px solid ${C.yellow}40`, padding: "1px 5px",
+                            fontSize: 9, fontWeight: 700, color: AMBER,
+                            border: `1px solid ${AMBER}40`, padding: "1px 5px",
                         }}>CACHE HIT</span>
                     )}
                 </div>
 
                 <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
-                    <span style={{ fontSize: 10, color: C.muted, fontFamily: "monospace" }}>
+                    <span style={{ fontSize: 10, color: MUTED, fontFamily: "monospace" }}>
                         {record.fetch_time_ms ? `${record.fetch_time_ms}ms` : "—"}
                     </span>
-                    <span style={{ fontSize: 10, color: C.muted }}>
+                    <span style={{ fontSize: 10, color: MUTED }}>
                         {record.created_at?.split("T")[0]}
                     </span>
                     {expanded
-                        ? <ChevronDown size={12} color={C.muted} />
-                        : <ChevronRight size={12} color={C.muted} />}
+                        ? <ChevronDown size={12} color={MUTED} />
+                        : <ChevronRight size={12} color={MUTED} />}
                 </div>
             </button>
 
             {/* ── Expanded body: stats bar + two-col layout ── */}
             {expanded && (
-                <div style={{ borderTop: `1px solid ${C.border}` }}>
+                <div style={{ borderTop: `1px solid ${BORDER}` }}>
 
                     {/* Stats bar — full width */}
                     <div style={{
                         display: "grid", gridTemplateColumns: "repeat(5, 1fr)",
-                        gap: 0, borderBottom: `1px solid ${C.border}`,
+                        gap: 0, borderBottom: `1px solid ${BORDER}`,
                     }}>
                         {[
-                            { label: "CONDITIONS", value: record.conditions_count ?? 0, color: C.yellow },
-                            { label: "MEDICATIONS", value: record.medications_count ?? 0, color: C.accent },
-                            { label: "LABS", value: record.lab_results_count ?? 0, color: C.cyan },
-                            { label: "ALLERGIES", value: record.allergies_count ?? 0, color: C.red },
-                            { label: "REPORTS", value: record.diagnostic_reports_count ?? 0, color: C.green },
+                            { label: "CONDITIONS", value: record.conditions_count ?? 0, color: AMBER },
+                            { label: "MEDICATIONS", value: record.medications_count ?? 0, color: ACCENT },
+                            { label: "LABS", value: record.lab_results_count ?? 0, color: CYAN },
+                            { label: "ALLERGIES", value: record.allergies_count ?? 0, color: RED },
+                            { label: "REPORTS", value: record.diagnostic_reports_count ?? 0, color: GREEN },
                         ].map(({ label, value, color }, i, arr) => (
                             <div key={label} style={{
                                 padding: "14px 0", textAlign: "center",
-                                borderRight: i < arr.length - 1 ? `1px solid ${C.border}` : "none",
-                                background: C.bg,
+                                borderRight: i < arr.length - 1 ? `1px solid ${BORDER}` : "none",
+                                background: BG,
                             }}>
                                 <p style={{ fontSize: 22, fontWeight: 900, color, margin: 0, lineHeight: 1 }}>{value}</p>
-                                <p style={{ fontSize: 9, color: C.muted, margin: "4px 0 0", letterSpacing: "0.12em" }}>{label}</p>
+                                <p style={{ fontSize: 9, color: MUTED, margin: "4px 0 0", letterSpacing: "0.12em" }}>{label}</p>
                             </div>
                         ))}
                     </div>
@@ -210,7 +208,7 @@ function HistoryRecordCard({ record, index }) {
                     }}>
                         {/* ── LEFT: structured detail ── */}
                         <div style={{
-                            padding: "16px 14px", borderRight: `1px solid ${C.border}`,
+                            padding: "16px 14px", borderRight: `1px solid ${BORDER}`,
                             display: "flex", flexDirection: "column", gap: 14,
                         }}>
                             {/* Demographics */}
@@ -218,7 +216,7 @@ function HistoryRecordCard({ record, index }) {
                                 <div>
                                     <Label>Demographics</Label>
                                     <div style={{
-                                        background: C.bg, border: `1px solid ${C.border}`,
+                                        background: BG, border: `1px solid ${BORDER}`,
                                         padding: "10px 12px", display: "flex", alignItems: "center", gap: 10,
                                     }}>
                                         <div style={{
@@ -228,10 +226,10 @@ function HistoryRecordCard({ record, index }) {
                                             <User size={14} color="#fff" strokeWidth={1.5} />
                                         </div>
                                         <div>
-                                            <p style={{ fontSize: 13, fontWeight: 700, color: C.text, margin: 0 }}>
+                                            <p style={{ fontSize: 13, fontWeight: 700, color: TEXT, margin: 0 }}>
                                                 {record.demographics.name}
                                             </p>
-                                            <p style={{ fontSize: 10, color: C.muted, margin: "2px 0 0" }}>
+                                            <p style={{ fontSize: 10, color: MUTED, margin: "2px 0 0" }}>
                                                 {record.demographics.gender} · {record.demographics.age} yrs · DOB {record.demographics.dob}
                                             </p>
                                         </div>
@@ -243,13 +241,13 @@ function HistoryRecordCard({ record, index }) {
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                                 <div>
                                     <Label>FHIR Base URL</Label>
-                                    <p style={{ fontSize: 10, color: C.cyan, fontFamily: "monospace", margin: 0, wordBreak: "break-all" }}>
+                                    <p style={{ fontSize: 10, color: CYAN, fontFamily: "monospace", margin: 0, wordBreak: "break-all" }}>
                                         {record.fhir_base_url || "—"}
                                     </p>
                                 </div>
                                 <div>
                                     <Label>Resources Fetched</Label>
-                                    <p style={{ fontSize: 10, color: C.text, fontFamily: "monospace", margin: 0 }}>
+                                    <p style={{ fontSize: 10, color: TEXT, fontFamily: "monospace", margin: 0 }}>
                                         {record.fhir_resources_fetched ?? 0} resource types
                                     </p>
                                 </div>
@@ -262,12 +260,12 @@ function HistoryRecordCard({ record, index }) {
                                     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                                         {record.active_conditions.map((c, i) => (
                                             <div key={i} style={{
-                                                background: C.bg, border: `1px solid ${C.border}`,
+                                                background: BG, border: `1px solid ${BORDER}`,
                                                 padding: "6px 10px", display: "flex", gap: 8, alignItems: "center",
                                             }}>
-                                                <div style={{ width: 5, height: 5, background: C.yellow, borderRadius: "50%", flexShrink: 0 }} />
-                                                <span style={{ fontSize: 11, color: C.text }}>{c.display}</span>
-                                                <span style={{ fontSize: 9, color: C.muted, fontFamily: "monospace", marginLeft: "auto" }}>{c.code}</span>
+                                                <div style={{ width: 5, height: 5, background: AMBER, borderRadius: "50%", flexShrink: 0 }} />
+                                                <span style={{ fontSize: 11, color: TEXT }}>{c.display}</span>
+                                                <span style={{ fontSize: 9, color: MUTED, fontFamily: "monospace", marginLeft: "auto" }}>{c.code}</span>
                                             </div>
                                         ))}
                                     </div>
@@ -281,20 +279,20 @@ function HistoryRecordCard({ record, index }) {
                                     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                                         {record.medications.map((m, i) => (
                                             <div key={i} style={{
-                                                background: C.bg, border: `1px solid ${C.border}`,
+                                                background: BG, border: `1px solid ${BORDER}`,
                                                 padding: "8px 10px",
                                             }}>
                                                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                                                    <span style={{ fontSize: 12, fontWeight: 700, color: C.text }}>{m.drug}</span>
+                                                    <span style={{ fontSize: 12, fontWeight: 700, color: TEXT }}>{m.drug}</span>
                                                     <span style={{
                                                         fontSize: 9, fontWeight: 700,
-                                                        color: m.status === "active" ? C.green : C.muted,
-                                                        border: `1px solid ${m.status === "active" ? C.green : C.muted}40`,
+                                                        color: m.status === "active" ? GREEN : MUTED,
+                                                        border: `1px solid ${m.status === "active" ? GREEN : MUTED}40`,
                                                         padding: "1px 5px", textTransform: "uppercase", letterSpacing: "0.1em",
                                                     }}>{m.status}</span>
                                                 </div>
                                                 {(m.dose || m.frequency) && (
-                                                    <p style={{ fontSize: 10, color: C.muted, margin: "3px 0 0" }}>
+                                                    <p style={{ fontSize: 10, color: MUTED, margin: "3px 0 0" }}>
                                                         {[m.dose, m.frequency].filter(Boolean).join(" · ")}
                                                     </p>
                                                 )}
@@ -310,15 +308,15 @@ function HistoryRecordCard({ record, index }) {
                                     <Label>Lab Results ({record.lab_results.length})</Label>
                                     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                                         {record.lab_results.map((l, i) => {
-                                            const flagColor = { HIGH: C.red, LOW: C.yellow, CRITICAL: "#FF0000", NORMAL: C.green }[l.flag] || C.muted;
+                                            const flagColor = { HIGH: RED, LOW: AMBER, CRITICAL: "#FF0000", NORMAL: GREEN }[l.flag] || MUTED;
                                             return (
                                                 <div key={i} style={{
-                                                    background: C.bg, border: `1px solid ${C.border}`,
+                                                    background: BG, border: `1px solid ${BORDER}`,
                                                     padding: "8px 10px", display: "flex", justifyContent: "space-between", alignItems: "center",
                                                 }}>
                                                     <div>
-                                                        <p style={{ fontSize: 11, fontWeight: 700, color: C.text, margin: 0 }}>{l.display}</p>
-                                                        <p style={{ fontSize: 9, color: C.muted, margin: "2px 0 0", fontFamily: "monospace" }}>{l.loinc}</p>
+                                                        <p style={{ fontSize: 11, fontWeight: 700, color: TEXT, margin: 0 }}>{l.display}</p>
+                                                        <p style={{ fontSize: 9, color: MUTED, margin: "2px 0 0", fontFamily: "monospace" }}>{l.loinc}</p>
                                                     </div>
                                                     <div style={{ textAlign: "right" }}>
                                                         <p style={{ fontSize: 13, fontWeight: 900, color: flagColor, margin: 0 }}>
@@ -343,14 +341,14 @@ function HistoryRecordCard({ record, index }) {
                                     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                                         {record.allergies.map((a, i) => (
                                             <div key={i} style={{
-                                                background: `${C.red}10`, border: `1px solid ${C.red}30`,
+                                                background: `${RED}10`, border: `1px solid ${RED}30`,
                                                 padding: "8px 10px", display: "flex", gap: 8, alignItems: "center",
                                             }}>
-                                                <ShieldAlert size={12} color={C.red} />
+                                                <ShieldAlert size={12} color={RED} />
                                                 <div>
-                                                    <p style={{ fontSize: 11, fontWeight: 700, color: C.text, margin: 0 }}>{a.substance}</p>
+                                                    <p style={{ fontSize: 11, fontWeight: 700, color: TEXT, margin: 0 }}>{a.substance}</p>
                                                     {a.reaction && (
-                                                        <p style={{ fontSize: 9, color: C.muted, margin: "2px 0 0" }}>
+                                                        <p style={{ fontSize: 9, color: MUTED, margin: "2px 0 0" }}>
                                                             {a.reaction}{a.severity && ` · ${a.severity}`}
                                                         </p>
                                                     )}
@@ -368,14 +366,14 @@ function HistoryRecordCard({ record, index }) {
                                     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                                         {record.diagnostic_reports.map((r, i) => (
                                             <div key={i} style={{
-                                                background: C.bg, border: `1px solid ${C.border}`,
+                                                background: BG, border: `1px solid ${BORDER}`,
                                                 padding: "8px 10px", display: "flex", gap: 8, alignItems: "center",
                                             }}>
-                                                <Scan size={12} color={C.cyan} />
+                                                <Scan size={12} color={CYAN} />
                                                 <div>
-                                                    <p style={{ fontSize: 11, fontWeight: 700, color: C.text, margin: 0 }}>{r.display}</p>
-                                                    {r.conclusion && <p style={{ fontSize: 9, color: C.muted, margin: "2px 0 0" }}>{r.conclusion}</p>}
-                                                    {r.issued && <p style={{ fontSize: 9, color: C.muted, margin: "2px 0 0", fontFamily: "monospace" }}>{r.issued?.split("T")[0]}</p>}
+                                                    <p style={{ fontSize: 11, fontWeight: 700, color: TEXT, margin: 0 }}>{r.display}</p>
+                                                    {r.conclusion && <p style={{ fontSize: 9, color: MUTED, margin: "2px 0 0" }}>{r.conclusion}</p>}
+                                                    {r.issued && <p style={{ fontSize: 9, color: MUTED, margin: "2px 0 0", fontFamily: "monospace" }}>{r.issued?.split("T")[0]}</p>}
                                                 </div>
                                             </div>
                                         ))}
@@ -384,7 +382,7 @@ function HistoryRecordCard({ record, index }) {
                             )}
 
                             {/* Timestamp footer */}
-                            <p style={{ fontSize: 10, color: C.muted, fontFamily: "monospace", margin: "auto 0 0" }}>
+                            <p style={{ fontSize: 10, color: MUTED, fontFamily: "monospace", margin: "auto 0 0" }}>
                                 <Clock size={9} style={{ verticalAlign: "middle", marginRight: 4 }} />
                                 {record.created_at}
                             </p>
@@ -404,17 +402,17 @@ function HistoryRecordCard({ record, index }) {
 // ── Stats panel ─────────────────────────────────────────────────────────────
 function StatsPanel({ stats }) {
     const items = [
-        { label: "Total Sessions", value: stats.total_fetch_sessions, color: C.text },
-        { label: "Cache Hits", value: stats.cache_hit_sessions, color: C.green },
-        { label: "Cache Misses", value: stats.cache_miss_sessions, color: C.yellow },
-        { label: "SHARP Sessions", value: stats.sharp_sessions, color: C.accent },
-        { label: "Direct Sessions", value: stats.direct_sessions, color: C.cyan },
-        { label: "Imaging Available", value: stats.imaging_available_sessions, color: C.cyan },
-        { label: "Avg Fetch (ms)", value: stats.avg_fetch_time_ms ?? "—", color: C.text },
-        { label: "Avg Conditions", value: stats.avg_conditions_count ?? "—", color: C.yellow },
-        { label: "Avg Medications", value: stats.avg_medications_count ?? "—", color: C.accent },
-        { label: "Peak Conditions", value: stats.peak_conditions_count, color: C.red },
-        { label: "Peak Labs", value: stats.peak_lab_results_count, color: C.red },
+        { label: "Total Sessions", value: stats.total_fetch_sessions, color: TEXT },
+        { label: "Cache Hits", value: stats.cache_hit_sessions, color: GREEN },
+        { label: "Cache Misses", value: stats.cache_miss_sessions, color: AMBER },
+        { label: "SHARP Sessions", value: stats.sharp_sessions, color: ACCENT },
+        { label: "Direct Sessions", value: stats.direct_sessions, color: CYAN },
+        { label: "Imaging Available", value: stats.imaging_available_sessions, color: CYAN },
+        { label: "Avg Fetch (ms)", value: stats.avg_fetch_time_ms ?? "—", color: TEXT },
+        { label: "Avg Conditions", value: stats.avg_conditions_count ?? "—", color: AMBER },
+        { label: "Avg Medications", value: stats.avg_medications_count ?? "—", color: ACCENT },
+        { label: "Peak Conditions", value: stats.peak_conditions_count, color: RED },
+        { label: "Peak Labs", value: stats.peak_lab_results_count, color: RED },
     ];
 
     return (
@@ -427,29 +425,29 @@ function StatsPanel({ stats }) {
             }}>
                 {items.map(({ label, value, color }) => (
                     <div key={label} style={{
-                        background: C.card, border: `1px solid ${C.border}`,
+                        background: CARD, border: `1px solid ${BORDER}`,
                         padding: "12px 14px",
                     }}>
                         <p style={{ fontSize: 20, fontWeight: 900, color, margin: 0, lineHeight: 1 }}>{value}</p>
-                        <p style={{ fontSize: 9, color: C.muted, margin: "4px 0 0", letterSpacing: "0.1em", textTransform: "uppercase" }}>{label}</p>
+                        <p style={{ fontSize: 9, color: MUTED, margin: "4px 0 0", letterSpacing: "0.1em", textTransform: "uppercase" }}>{label}</p>
                     </div>
                 ))}
             </div>
 
             {/* Timeline */}
             <div style={{
-                background: C.card, border: `1px solid ${C.border}`,
+                background: CARD, border: `1px solid ${BORDER}`,
                 padding: "12px 14px", display: "flex", gap: 24,
             }}>
                 <div>
                     <Label>First Fetch</Label>
-                    <p style={{ fontSize: 12, color: C.text, fontFamily: "monospace", margin: 0 }}>
+                    <p style={{ fontSize: 12, color: TEXT, fontFamily: "monospace", margin: 0 }}>
                         {stats.first_fetch?.split("T")[0] ?? "—"}
                     </p>
                 </div>
                 <div>
                     <Label>Latest Fetch</Label>
-                    <p style={{ fontSize: 12, color: C.green, fontFamily: "monospace", margin: 0 }}>
+                    <p style={{ fontSize: 12, color: GREEN, fontFamily: "monospace", margin: 0 }}>
                         {stats.latest_fetch?.split("T")[0] ?? "—"}
                     </p>
                 </div>
@@ -528,25 +526,24 @@ export default function PatientHistory({ defaultPatientId = "" }) {
 
     return (
         <div style={{
-            background: C.panel, border: `1px solid ${C.border}`,
-            fontFamily: "'DM Sans', system-ui, sans-serif",
+            background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 12, overflow: "hidden"
         }}>
             {/* Section header */}
             <div style={{
-                padding: "16px 20px", borderBottom: `1px solid ${C.border}`,
+                padding: "16px 20px", borderBottom: `1px solid ${BORDER}`,
                 display: "flex", alignItems: "center", gap: 10,
             }}>
                 <div style={{
-                    width: 30, height: 30, background: `${C.accent}18`,
+                    width: 30, height: 30, background: `${ACCENT}18`,
                     display: "flex", alignItems: "center", justifyContent: "center",
                 }}>
-                    <Clock size={14} color={C.accent} />
+                    <Clock size={14} color={ACCENT} />
                 </div>
                 <div>
-                    <p style={{ fontSize: 12, fontWeight: 800, color: C.text, margin: 0, letterSpacing: "0.05em" }}>
+                    <p style={{ fontSize: 12, fontWeight: 800, color: TEXT, margin: 0, letterSpacing: "0.05em" }}>
                         Patient Fetch History
                     </p>
-                    <p style={{ fontSize: 10, color: C.muted, margin: "2px 0 0" }}>
+                    <p style={{ fontSize: 10, color: MUTED, margin: "2px 0 0" }}>
                         Query the /history endpoints on the Patient Context Agent
                     </p>
                 </div>
@@ -555,7 +552,7 @@ export default function PatientHistory({ defaultPatientId = "" }) {
             {/* Tab bar */}
             <div style={{
                 display: "flex", gap: 0, overflowX: "auto",
-                borderBottom: `1px solid ${C.border}`,
+                borderBottom: `1px solid ${BORDER}`,
                 padding: "0 20px",
             }}>
                 {tabs.map(t => (
@@ -572,12 +569,12 @@ export default function PatientHistory({ defaultPatientId = "" }) {
 
             {/* Input area */}
             <div style={{
-                padding: "14px 20px", borderBottom: `1px solid ${C.border}`,
+                padding: "14px 20px", borderBottom: `1px solid ${BORDER}`,
                 display: "flex", gap: 10, alignItems: "flex-end", flexWrap: "wrap",
             }}>
                 {needsPatientId && (
                     <div style={{ flex: "1 1 180px" }}>
-                        <p style={{ fontSize: 10, color: C.muted, margin: "0 0 4px", fontWeight: 600 }}>
+                        <p style={{ fontSize: 10, color: MUTED, margin: "0 0 4px", fontWeight: 600 }}>
                             PATIENT ID
                         </p>
                         <input
@@ -586,9 +583,9 @@ export default function PatientHistory({ defaultPatientId = "" }) {
                             onKeyDown={e => e.key === "Enter" && canSubmit && fetchEndpoint()}
                             placeholder="e.g. example"
                             style={{
-                                width: "100%", background: C.bg, border: `1px solid ${C.border}`,
-                                color: C.text, padding: "8px 11px", fontSize: 12,
-                                outline: "none", fontFamily: "monospace",
+                                width: "100%", background: BG, border: `1px solid ${BORDER}`, borderRadius: 8,
+                                color: TEXT, padding: "10px 14px", fontSize: 13, outline: "none",
+                                fontFamily: "monospace", transition: "border-color 0.2s",
                             }}
                         />
                     </div>
@@ -596,7 +593,7 @@ export default function PatientHistory({ defaultPatientId = "" }) {
 
                 {needsRequestId && (
                     <div style={{ flex: "1 1 200px" }}>
-                        <p style={{ fontSize: 10, color: C.muted, margin: "0 0 4px", fontWeight: 600 }}>
+                        <p style={{ fontSize: 10, color: MUTED, margin: "0 0 4px", fontWeight: 600 }}>
                             REQUEST ID
                         </p>
                         <input
@@ -605,9 +602,9 @@ export default function PatientHistory({ defaultPatientId = "" }) {
                             onKeyDown={e => e.key === "Enter" && canSubmit && fetchEndpoint()}
                             placeholder="e.g. a1b2c3d4"
                             style={{
-                                width: "100%", background: C.bg, border: `1px solid ${C.border}`,
-                                color: C.text, padding: "8px 11px", fontSize: 12,
-                                outline: "none", fontFamily: "monospace",
+                                width: "100%", background: BG, border: `1px solid ${BORDER}`, borderRadius: 8,
+                                color: TEXT, padding: "10px 14px", fontSize: 13, outline: "none",
+                                fontFamily: "monospace", transition: "border-color 0.2s",
                             }}
                         />
                     </div>
@@ -615,7 +612,7 @@ export default function PatientHistory({ defaultPatientId = "" }) {
 
                 {activeTab === "delete" && (
                     <div style={{ flex: "1 1 200px" }}>
-                        <p style={{ fontSize: 10, color: C.muted, margin: "0 0 4px", fontWeight: 600 }}>
+                        <p style={{ fontSize: 10, color: MUTED, margin: "0 0 4px", fontWeight: 600 }}>
                             INTERNAL TOKEN
                         </p>
                         <input
@@ -624,9 +621,9 @@ export default function PatientHistory({ defaultPatientId = "" }) {
                             placeholder="meditwin-internal"
                             type="password"
                             style={{
-                                width: "100%", background: C.bg, border: `1px solid ${C.red}40`,
-                                color: C.text, padding: "8px 11px", fontSize: 12,
-                                outline: "none", fontFamily: "monospace",
+                                width: "100%", background: BG, border: `1px solid ${RED}40`, borderRadius: 8,
+                                color: TEXT, padding: "10px 14px", fontSize: 13, outline: "none",
+                                fontFamily: "monospace", transition: "border-color 0.2s",
                             }}
                         />
                     </div>
@@ -637,9 +634,9 @@ export default function PatientHistory({ defaultPatientId = "" }) {
                         onClick={() => setDeleteConfirm(true)}
                         disabled={!patientId.trim()}
                         style={{
-                            background: `${C.red}20`, border: `1px solid ${C.red}60`,
-                            color: C.red, padding: "8px 16px", cursor: "pointer",
-                            fontSize: 11, fontWeight: 800, letterSpacing: "0.12em",
+                            background: `${RED}20`, border: `1px solid ${RED}60`, borderRadius: 8,
+                            color: RED, padding: "10px 16px", cursor: "pointer",
+                            fontSize: 12, fontWeight: 800, letterSpacing: "0.12em",
                             textTransform: "uppercase", display: "flex", alignItems: "center", gap: 6,
                         }}
                     >
@@ -648,15 +645,15 @@ export default function PatientHistory({ defaultPatientId = "" }) {
                 ) : activeTab === "delete" && deleteConfirm ? (
                     <div style={{ display: "flex", gap: 6 }}>
                         <button onClick={() => { fetchEndpoint(); setDeleteConfirm(false); }} style={{
-                            background: C.red, border: "none", color: "#fff",
-                            padding: "8px 14px", cursor: "pointer",
-                            fontSize: 11, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase",
+                            background: RED, border: "none", borderRadius: 8, color: "#fff",
+                            padding: "10px 16px", cursor: "pointer",
+                            fontSize: 12, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase",
                         }}>
                             Confirm Delete
                         </button>
                         <button onClick={() => setDeleteConfirm(false)} style={{
-                            background: "none", border: `1px solid ${C.border}`, color: C.muted,
-                            padding: "8px 12px", cursor: "pointer", fontSize: 11,
+                            background: "none", border: `1px solid ${BORDER}`, borderRadius: 8, color: MUTED,
+                            padding: "10px 16px", cursor: "pointer", fontSize: 12, fontWeight: 700,
                         }}>
                             Cancel
                         </button>
@@ -666,12 +663,12 @@ export default function PatientHistory({ defaultPatientId = "" }) {
                         onClick={fetchEndpoint}
                         disabled={loading || !canSubmit}
                         style={{
-                            background: loading || !canSubmit ? C.dim : "#3D3A5C",
-                            border: "none", color: "#fff", padding: "8px 18px",
+                            background: loading || !canSubmit ? "var(--color-surface-2, #2A2A3D)" : ACCENT,
+                            border: "none", borderRadius: 8, color: "#fff", padding: "10px 22px",
                             cursor: loading || !canSubmit ? "not-allowed" : "pointer",
-                            fontSize: 11, fontWeight: 800, letterSpacing: "0.15em",
-                            textTransform: "uppercase", display: "flex", alignItems: "center", gap: 6,
-                            transition: "all 0.2s",
+                            fontSize: 12, fontWeight: 800, letterSpacing: "0.14em",
+                            textTransform: "uppercase", display: "flex", alignItems: "center", gap: 8,
+                            transition: "all 0.2s", boxShadow: loading || !canSubmit ? "none" : `0 4px 14px ${ACCENT}35`,
                         }}
                     >
                         {loading
@@ -686,26 +683,26 @@ export default function PatientHistory({ defaultPatientId = "" }) {
                 {/* Error */}
                 {error && (
                     <div style={{
-                        background: `${C.red}10`, border: `1px solid ${C.red}30`,
+                        background: `${RED}10`, border: `1px solid ${RED}30`,
                         padding: "12px 14px", display: "flex", alignItems: "center", gap: 8,
                     }}>
-                        <XCircle size={14} color={C.red} />
-                        <p style={{ fontSize: 12, color: C.red, margin: 0 }}>{error}</p>
+                        <XCircle size={14} color={RED} />
+                        <p style={{ fontSize: 12, color: RED, margin: 0 }}>{error}</p>
                     </div>
                 )}
 
                 {/* Delete success */}
                 {deleted && (
                     <div style={{
-                        background: `${C.green}10`, border: `1px solid ${C.green}30`,
+                        background: `${GREEN}10`, border: `1px solid ${GREEN}30`,
                         padding: "12px 16px", display: "flex", alignItems: "center", gap: 10,
                     }}>
-                        <CheckCircle2 size={14} color={C.green} />
+                        <CheckCircle2 size={14} color={GREEN} />
                         <div>
-                            <p style={{ fontSize: 12, fontWeight: 700, color: C.green, margin: 0 }}>
+                            <p style={{ fontSize: 12, fontWeight: 700, color: GREEN, margin: 0 }}>
                                 Deleted {deleted.deleted_records} record{deleted.deleted_records !== 1 ? "s" : ""}
                             </p>
-                            <p style={{ fontSize: 10, color: C.muted, margin: "2px 0 0", fontFamily: "monospace" }}>
+                            <p style={{ fontSize: 10, color: MUTED, margin: "2px 0 0", fontFamily: "monospace" }}>
                                 patient_id: {deleted.patient_id} · status: {deleted.status}
                             </p>
                         </div>
@@ -720,7 +717,7 @@ export default function PatientHistory({ defaultPatientId = "" }) {
                             marginBottom: 12,
                         }}>
                             <Label>{result.total_records} record{result.total_records !== 1 ? "s" : ""} for {result.patient_id}</Label>
-                            <span style={{ fontSize: 10, color: C.muted }}>
+                            <span style={{ fontSize: 10, color: MUTED }}>
                                 showing {result.records?.length}
                             </span>
                         </div>
@@ -761,8 +758,8 @@ export default function PatientHistory({ defaultPatientId = "" }) {
                 {/* Empty state */}
                 {!result && !error && !deleted && !loading && (
                     <div style={{ textAlign: "center", padding: "30px 0" }}>
-                        <Database size={24} color={C.dim} style={{ margin: "0 auto 8px" }} />
-                        <p style={{ fontSize: 12, color: C.muted, margin: 0 }}>
+                        <Database size={24} color={SUBTLE} style={{ margin: "0 auto 8px" }} />
+                        <p style={{ fontSize: 12, color: MUTED, margin: 0 }}>
                             {tabs.find(t => t.id === activeTab)?.label} — enter {needsRequestId ? "a request ID" : "a patient ID"} and query
                         </p>
                     </div>

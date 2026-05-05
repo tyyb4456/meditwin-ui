@@ -1,642 +1,228 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-    ArrowLeft, ChevronRight, UserCheck, Brain, FlaskConical,
-    Shield, Eye, GitBranch, FileText, Cpu, Zap
+  ChevronRight, UserCheck, Brain, FlaskConical,
+  Shield, Eye, GitBranch, FileText, Cpu, ArrowRight
 } from "lucide-react";
-import ThemeToggle from "../components/theme/ThemeToggle";
+import AppLayout from "../components/layout/AppLayout";
 import ExplanationHistory from "../components/history/ExplanationHistory";
 
 const agents = [
-    {
-        id: "patient-context",
-        number: "01",
-        port: 8001,
-        title: "Patient Context Agent",
-        type: "A2A",
-        typeBadgeColor: "#6366f1",
-        role: "System Entry Point",
-        description: "Fetches FHIR R4 resources in parallel and normalises them into a unified PatientState that every downstream agent relies on.",
-        capabilities: ["Parallel FHIR R4 fetching", "PatientState normalisation", "Redis caching (10 min TTL)"],
-        icon: UserCheck,
-        accentHue: "258",
-    },
-    {
-        id: "diagnosis",
-        number: "02",
-        port: 8002,
-        title: "Diagnosis Agent",
-        type: "A2A",
-        typeBadgeColor: "#8b5cf6",
-        role: "Differential Diagnosis",
-        description: "Runs retrieval-augmented generation over a medical knowledge base to produce a confidence-ranked differential diagnosis list.",
-        capabilities: ["RAG over ChromaDB", "LLM reasoning (GPT-4o-mini)", "Confidence-ranked differentials"],
-        icon: Brain,
-        accentHue: "270",
-    },
-    {
-        id: "lab-analysis",
-        number: "03",
-        port: 8003,
-        title: "Lab Analysis Agent",
-        type: "A2A",
-        typeBadgeColor: "#06b6d4",
-        role: "Abnormality Detection",
-        description: "Runs a rules engine over FHIR Observation resources to flag abnormal lab values and produce an annotated clinical lab report.",
-        capabilities: ["Rules-based abnormality flags", "LOINC-coded observations", "Annotated lab reports"],
-        icon: FlaskConical,
-        accentHue: "192",
-    },
-    {
-        id: "drug-safety",
-        number: "04",
-        port: 8004,
-        title: "Drug Safety Agent",
-        type: "MCP Server",
-        typeBadgeColor: "#f59e0b",
-        role: "Drug Interactions",
-        description: "Published as a standalone MCP server on the Marketplace. Calls FDA OpenFDA and RxNav APIs to surface unsafe drug combinations.",
-        capabilities: ["check_drug_interactions", "get_contraindications", "suggest_alternatives"],
-        icon: Shield,
-        accentHue: "38",
-        isMcp: true,
-    },
-    {
-        id: "imaging-triage",
-        number: "05",
-        port: 8005,
-        title: "Imaging Triage Agent",
-        type: "A2A",
-        typeBadgeColor: "#10b981",
-        role: "X-Ray Analysis",
-        description: "Runs a trained TensorFlow/Keras CNN on chest X-rays to produce a triage priority score and a FHIR DiagnosticReport.",
-        capabilities: ["Pneumonia CNN (92.3% acc.)", "FHIR DiagnosticReport output", "Conditional execution"],
-        icon: Eye,
-        accentHue: "158",
-    },
-    {
-        id: "digital-twin",
-        number: "06",
-        port: 8006,
-        title: "Digital Twin Agent",
-        type: "A2A",
-        typeBadgeColor: "#3b82f6",
-        role: "Outcome Simulation",
-        description: "Engineers ML features from FHIR data and runs XGBoost risk models to compare treatment scenarios and generate a FHIR CarePlan.",
-        capabilities: ["XGBoost risk models", "Treatment scenario comparison", "FHIR CarePlan generation"],
-        icon: GitBranch,
-        accentHue: "217",
-    },
+  { id: "patient-context", number: "01", port: 8001, title: "Patient Context Agent", type: "A2A", role: "System Entry Point", description: "Fetches FHIR R4 resources in parallel and normalises them into a unified PatientState that every downstream agent relies on.", capabilities: ["Parallel FHIR R4 fetching", "PatientState normalisation", "Redis caching (10 min TTL)"], icon: UserCheck, color: "#6366F1" },
+  { id: "diagnosis", number: "02", port: 8002, title: "Diagnosis Agent", type: "A2A", role: "Differential Diagnosis", description: "Runs retrieval-augmented generation over a medical knowledge base to produce a confidence-ranked differential diagnosis list.", capabilities: ["RAG over ChromaDB", "LLM reasoning (Gemini Flash 2.5)", "Confidence-ranked differentials"], icon: Brain, color: "#8B5CF6" },
+  { id: "lab-analysis", number: "03", port: 8003, title: "Lab Analysis Agent", type: "A2A", role: "Abnormality Detection", description: "Runs a rules engine over FHIR Observation resources to flag abnormal lab values and produce an annotated clinical lab report.", capabilities: ["Rules-based abnormality flags", "LOINC-coded observations", "Annotated lab reports"], icon: FlaskConical, color: "#06B6D4" },
+  { id: "drug-safety", number: "04", port: 8004, title: "Drug Safety Agent", type: "MCP Server", role: "Drug Interactions", description: "Published as a standalone MCP server. Calls FDA OpenFDA and RxNav APIs to surface unsafe drug combinations.", capabilities: ["check_drug_interactions", "get_contraindications", "suggest_alternatives"], icon: Shield, color: "#F59E0B", isMcp: true },
+  { id: "imaging-triage", number: "05", port: 8005, title: "Imaging Triage Agent", type: "A2A", role: "X-Ray Analysis", description: "Runs a trained TensorFlow/Keras CNN on chest X-rays to produce a triage priority score and a FHIR DiagnosticReport.", capabilities: ["Pneumonia CNN (95.5% acc.)", "FHIR DiagnosticReport output", "Conditional execution"], icon: Eye, color: "#A78BFA" },
+  { id: "digital-twin", number: "06", port: 8006, title: "Digital Twin Agent", type: "A2A", role: "Outcome Simulation", description: "Engineers ML features from FHIR data and runs XGBoost risk models to compare treatment scenarios and generate a FHIR CarePlan.", capabilities: ["XGBoost risk models", "Treatment scenario comparison", "FHIR CarePlan generation"], icon: GitBranch, color: "#3B82F6" },
 ];
 
-const explanationAgent = {
-    id: "explanation",
-    number: "07",
-    port: 8008,
-    title: "Explanation Agent",
-    type: "A2A",
-    typeBadgeColor: "#f97316",
-    role: "Final Output",
-    description: "Assembles the complete clinical output: SOAP note for clinicians, plain-language summary for patients, and a full FHIR Bundle.",
-    capabilities: ["SOAP note generation", "Patient-friendly summary (Grade 6)", "FHIR Bundle assembly"],
-    icon: FileText,
-    accentHue: "25",
+const explanationAgent = { id: "explanation", number: "07", port: 8008, title: "Explanation Agent", type: "A2A", role: "Final Output", description: "Assembles the complete clinical output: SOAP note for clinicians, plain-language summary for patients, and a full FHIR Bundle.", capabilities: ["SOAP note generation", "Patient-friendly summary (Grade 6)", "FHIR Bundle assembly"], icon: FileText, color: "#F97316" };
+
+const routeMap = {
+  "patient-context": "/dashboard/microservices/patient-context",
+  "diagnosis": "/dashboard/microservices/diagnosis-agent",
+  "lab-analysis": "/dashboard/microservices/lab-analysis",
+  "drug-safety": "/dashboard/microservices/drug-safety",
+  "imaging-triage": "/dashboard/microservices/imaging-triage",
+  "digital-twin": "/dashboard/microservices/digital-twin",
 };
 
-// ── Breadcrumb nav ─────────────────────────────────────────────────────────────
-function Breadcrumb({ items }) {
-    return (
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            {items.map((item, i) => (
-                <span key={i} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    {i > 0 && (
-                        <ChevronRight size={10} strokeWidth={2.5} style={{ color: "var(--color-text-subtle)", opacity: 0.5 }} />
-                    )}
-                    {item.onClick ? (
-                        <button
-                            onClick={item.onClick}
-                            style={{
-                                background: "none", border: "none", cursor: "pointer",
-                                fontSize: 11, fontWeight: 700, letterSpacing: "0.12em",
-                                textTransform: "uppercase", color: "var(--color-text-subtle)",
-                                transition: "color 0.2s", padding: 0,
-                            }}
-                            onMouseEnter={e => e.currentTarget.style.color = "var(--color-text)"}
-                            onMouseLeave={e => e.currentTarget.style.color = "var(--color-text-subtle)"}
-                        >
-                            {item.label}
-                        </button>
-                    ) : (
-                        <span style={{
-                            fontSize: 11, fontWeight: 700, letterSpacing: "0.12em",
-                            textTransform: "uppercase",
-                            color: i === items.length - 1 ? "var(--color-text)" : "var(--color-text-subtle)",
-                        }}>
-                            {item.label}
-                        </span>
-                    )}
-                </span>
-            ))}
+function AgentCard({ agent, onClick }) {
+  const [hovered, setHovered] = useState(false);
+  const Icon = agent.icon;
+
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        textAlign: "left", border: "none", cursor: "pointer",
+        background: "var(--color-surface)",
+        border: `1px solid ${hovered ? agent.color + "50" : "var(--color-border)"}`,
+        borderRadius: 14, overflow: "hidden", padding: 0,
+        transition: "all 0.22s cubic-bezier(0.4,0,0.2,1)",
+        transform: hovered ? "translateY(-4px)" : "translateY(0)",
+        boxShadow: hovered ? `0 12px 40px ${agent.color}18` : "var(--shadow-xs)",
+        display: "block", width: "100%",
+      }}
+    >
+      {/* Color bar */}
+      <div style={{ height: 3, background: agent.color, opacity: hovered ? 1 : 0.35, transition: "opacity 0.22s" }} />
+
+      <div style={{ padding: "20px 20px" }}>
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: "var(--color-text-subtle)", fontVariantNumeric: "tabular-nums" }}>
+              {agent.number}
+            </span>
+            <div style={{
+              width: 36, height: 36, borderRadius: 9,
+              background: agent.color + "18",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <Icon size={16} strokeWidth={1.75} style={{ color: agent.color }} />
+            </div>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
+            <span style={{
+              fontSize: 9, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase",
+              padding: "3px 8px", borderRadius: 20,
+              background: agent.isMcp ? "transparent" : agent.color + "18",
+              border: agent.isMcp ? `1px solid ${agent.color}50` : "none",
+              color: agent.color,
+            }}>
+              {agent.type}
+            </span>
+            <span style={{ fontSize: 10, fontWeight: 600, color: "var(--color-text-subtle)", fontVariantNumeric: "tabular-nums" }}>
+              :{agent.port}
+            </span>
+          </div>
         </div>
-    );
+
+        {/* Title */}
+        <h3 style={{ fontSize: 14, fontWeight: 700, color: "var(--color-text)", letterSpacing: "-0.01em", marginBottom: 3 }}>
+          {agent.title}
+        </h3>
+        <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--color-text-subtle)", marginBottom: 12 }}>
+          {agent.role}
+        </p>
+
+        {/* Description */}
+        <p style={{ fontSize: 12, lineHeight: 1.6, color: "var(--color-text-muted)", marginBottom: 16, fontWeight: 400 }}>
+          {agent.description}
+        </p>
+
+        {/* Capabilities */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: 18 }}>
+          {agent.capabilities.map(cap => (
+            <div key={cap} style={{ display: "flex", alignItems: "center", gap: 7 }}>
+              <div style={{ width: 4, height: 4, borderRadius: "50%", background: agent.color, opacity: 0.7, flexShrink: 0 }} />
+              <span style={{ fontSize: 11, color: "var(--color-text-subtle)", fontWeight: 500 }}>{cap}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Footer */}
+        <div style={{ paddingTop: 14, borderTop: "1px solid var(--color-border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#22C55E", boxShadow: "0 0 6px rgba(34,197,94,0.6)", animation: "pulse-dot 2.5s infinite" }} />
+            <span style={{ fontSize: 10, color: "var(--color-text-subtle)", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" }}>Ready</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 4, color: agent.color }}>
+            <span style={{ fontSize: 12, fontWeight: 600 }}>Open</span>
+            <ArrowRight size={13} style={{ transform: hovered ? "translateX(3px)" : "translateX(0)", transition: "transform 0.22s" }} />
+          </div>
+        </div>
+      </div>
+    </button>
+  );
 }
 
 export default function MicroservicesAgents() {
-    const navigate = useNavigate();
-    const [hoveredAgent, setHoveredAgent] = useState(null);
-    const [visible, setVisible] = useState(false);
-    const [selectedAgent, setSelectedAgent] = useState(null);
+  const navigate = useNavigate();
+  const [visible, setVisible] = useState(false);
 
-    useEffect(() => {
-        const t = setTimeout(() => setVisible(true), 80);
-        return () => clearTimeout(t);
-    }, []);
+  useEffect(() => {
+    const t = setTimeout(() => setVisible(true), 80);
+    return () => clearTimeout(t);
+  }, []);
 
-    return (
-        <div style={{ minHeight: "100vh", fontFamily: "inherit", background: "var(--color-bg)", overflowX: "hidden" }}>
+  return (
+    <AppLayout>
+      <div style={{
+        padding: "40px 40px 64px",
+        opacity: visible ? 1 : 0,
+        transform: visible ? "translateY(0)" : "translateY(14px)",
+        transition: "all 0.55s cubic-bezier(0.22,1,0.36,1)",
+      }}>
 
-            {/* ── NAV ── */}
-            <nav style={{
-                position: "fixed", top: 0, left: 0, right: 0, zIndex: 50,
-                display: "flex", alignItems: "center", justifyContent: "space-between",
-                padding: "0 28px", height: 56,
-                background: "var(--color-bg)",
-                borderBottom: "1px solid var(--color-border)",
-            }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                    {/* Back button */}
-                    <button
-                        onClick={() => navigate("/dashboard")}
-                        style={{
-                            display: "flex", alignItems: "center", gap: 5,
-                            color: "var(--color-text-subtle)", background: "none", border: "none",
-                            cursor: "pointer", fontSize: 11, fontWeight: 700,
-                            letterSpacing: "0.1em", textTransform: "uppercase", transition: "color 0.2s",
-                        }}
-                        onMouseEnter={e => e.currentTarget.style.color = "var(--color-text)"}
-                        onMouseLeave={e => e.currentTarget.style.color = "var(--color-text-subtle)"}
-                    >
-                        <ArrowLeft size={11} strokeWidth={2.5} /> Back
-                    </button>
+        {/* Page Header */}
+        <div style={{ marginBottom: 36 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 12px", borderRadius: 20, background: "var(--color-accent-dim)", border: "1px solid var(--color-accent)" }}>
+              <Cpu size={11} style={{ color: "var(--color-accent)" }} />
+              <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--color-accent)" }}>
+                7 Agents
+              </span>
+            </div>
+          </div>
+          <h1 style={{ fontSize: "clamp(26px,4vw,40px)", fontWeight: 700, letterSpacing: "-0.03em", color: "var(--color-text)", lineHeight: 1.1, marginBottom: 10 }}>
+            Microservices Agents
+          </h1>
+          <p style={{ fontSize: 14, color: "var(--color-text-muted)", lineHeight: 1.6, maxWidth: 520, fontWeight: 400 }}>
+            Each agent runs as an independent microservice on its own port (8001–8006). Click any card to open its interface.
+          </p>
+        </div>
 
-                    <div style={{ width: 1, height: 14, background: "var(--color-border)" }} />
+        {/* Agent Grid */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 12, marginBottom: 32 }}>
+          {agents.map(agent => (
+            <AgentCard
+              key={agent.id}
+              agent={agent}
+              onClick={() => routeMap[agent.id] && navigate(routeMap[agent.id])}
+            />
+          ))}
+        </div>
 
-                    {/* MT logo */}
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <div style={{
-                            width: 26, height: 26, borderRadius: 4,
-                            background: "var(--color-accent)",
-                            display: "flex", alignItems: "center", justifyContent: "center",
-                        }}>
-                            <span style={{ color: "var(--color-bg)", fontSize: 9, fontWeight: 900, letterSpacing: "-0.02em" }}>MT</span>
-                        </div>
-                    </div>
+        {/* Explanation Agent — full-width */}
+        <div style={{ marginBottom: 32 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+            <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "var(--color-text-subtle)" }}>
+              Output Layer
+            </span>
+            <div style={{ flex: 1, height: 1, background: "var(--color-border)" }} />
+          </div>
 
-                    <div style={{ width: 1, height: 14, background: "var(--color-border)" }} />
-
-                    {/* Breadcrumbs */}
-                    <Breadcrumb items={[
-                        { label: "MediTwin AI", onClick: () => navigate("/") },
-                        { label: "Dashboard", onClick: () => navigate("/dashboard") },
-                        { label: "Microservices Agents" },
-                    ]} />
-                </div>
-
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <div style={{
-                        display: "flex", alignItems: "center", gap: 6,
-                        padding: "4px 10px", borderRadius: 2,
-                        border: "1px solid var(--color-border)",
-                        background: "var(--color-surface)",
-                    }}>
-                        <Cpu size={10} style={{ color: "var(--color-accent)" }} />
-                        <span style={{ color: "var(--color-text-subtle)", fontSize: 10, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase" }}>
-                            7 Agents
-                        </span>
-                    </div>
-                    <ThemeToggle />
-                </div>
-            </nav>
-
-            {/* ── BACKGROUND DECORATIONS ── */}
-            <div style={{
-                position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none",
-                backgroundImage: "linear-gradient(var(--color-text) 1px, transparent 1px), linear-gradient(90deg, var(--color-text) 1px, transparent 1px)",
-                backgroundSize: "60px 60px",
-                opacity: 0.025,
-            }} />
-            <div style={{
-                position: "fixed", top: "10%", right: 0,
-                width: 500, height: 500,
-                background: "var(--color-accent)",
-                borderRadius: "50%",
-                filter: "blur(140px)",
-                opacity: 0.03,
-                pointerEvents: "none", zIndex: 0,
-            }} />
-
-            {/* ── MAIN CONTENT ── */}
-            <div style={{
-                position: "relative", zIndex: 1,
-                paddingTop: 88, paddingBottom: 64,
-                paddingLeft: 28, paddingRight: 28,
-                opacity: visible ? 1 : 0,
-                transform: visible ? "translateY(0)" : "translateY(20px)",
-                transition: "all 0.55s cubic-bezier(0.22,1,0.36,1)",
-            }}>
-                <div style={{ maxWidth: 1100, margin: "0 auto", position: "relative", zIndex: 1 }}>
-
-                    {/* ── PAGE HEADER ── */}
-                    <div style={{ marginBottom: 44 }}>
-                        <div style={{
-                            display: "inline-flex", alignItems: "center", gap: 6,
-                            padding: "4px 12px",
-                            border: "1px solid var(--color-border)",
-                            background: "color-mix(in srgb, var(--color-accent) 6%, transparent)",
-                            marginBottom: 16,
-                        }}>
-                            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--color-accent)", display: "inline-block" }} />
-                            <span style={{ color: "var(--color-text)", fontSize: 10, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase" }}>
-                                Microservices-Based Agents
-                            </span>
-                        </div>
-
-                        <h1 style={{
-                            fontSize: "clamp(32px, 6vw, 72px)", fontWeight: 900,
-                            lineHeight: 0.92, letterSpacing: "-0.03em",
-                            textTransform: "uppercase",
-                            color: "var(--color-text)",
-                            marginBottom: 16,
-                        }}>
-                            Six<br />
-                            <span style={{ color: "transparent", WebkitTextStroke: "2px var(--color-text)" }}>Specialists</span>
-                        </h1>
-
-                        <p style={{ color: "var(--color-text-muted)", fontSize: 14, lineHeight: 1.65, maxWidth: 520 }}>
-                            Each agent operates as an independent microservice on its own port (8001–8006).
-                            Click any agent card to inspect its API, capabilities, and live status.
-                        </p>
-                    </div>
-
-                    {/* ── AGENT GRID (6 specialists) ── */}
-                    <div style={{
-                        display: "grid",
-                        gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
-                        gap: 12,
-                        marginBottom: 32,
-                    }}>
-                        {agents.map((agent, idx) => {
-                            const IconComponent = agent.icon;
-                            const isHovered = hoveredAgent === agent.id;
-
-                            return (
-                                <button
-                                    key={agent.id}
-                                    onMouseEnter={() => setHoveredAgent(agent.id)}
-                                    onMouseLeave={() => setHoveredAgent(null)}
-                                    onClick={() => {
-                                        if (agent.id === "patient-context") {
-                                            navigate("/dashboard/microservices/patient-context");
-                                        } else if (agent.id === "diagnosis") {
-                                            navigate("/dashboard/microservices/diagnosis-agent");
-                                        } else if (agent.id === "lab-analysis") {
-                                            navigate("/dashboard/microservices/lab-analysis");
-                                        } else if (agent.id === "drug-safety") {
-                                            navigate("/dashboard/microservices/drug-safety");
-                                        } else if (agent.id === "imaging-triage") {
-                                            navigate("/dashboard/microservices/imaging-triage");
-                                        } else if (agent.id === "digital-twin") {
-                                            navigate("/dashboard/microservices/digital-twin");
-                                        }
-                                    }}
-                                    style={{
-                                        position: "relative", textAlign: "left",
-                                        background: "var(--color-surface)",
-                                        border: `1px solid ${isHovered ? "var(--color-text-subtle)" : "var(--color-border)"}`,
-                                        borderRadius: 0,
-                                        cursor: "pointer", padding: 0,
-                                        transition: "all 0.25s cubic-bezier(0.4,0,0.2,1)",
-                                        transform: isHovered ? "translateY(-4px)" : "translateY(0)",
-                                        boxShadow: isHovered ? "0 12px 40px rgba(0,0,0,0.14)" : "none",
-                                        overflow: "hidden",
-                                        opacity: visible ? 1 : 0,
-                                        transitionDelay: `${0.05 + idx * 0.05}s`,
-                                    }}
-                                >
-                                    {/* Top accent line */}
-                                    <div style={{
-                                        position: "absolute", top: 0, left: 0, right: 0, height: 2,
-                                        background: `hsl(${agent.accentHue}, 38%, 50%)`,
-                                        transformOrigin: "left",
-                                        transform: isHovered ? "scaleX(1)" : "scaleX(0)",
-                                        transition: "transform 0.3s cubic-bezier(0.4,0,0.2,1)",
-                                    }} />
-
-                                    <div style={{ padding: 22 }}>
-
-                                        {/* ── Card Header ── */}
-                                        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 16 }}>
-                                            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                                                {/* Number */}
-                                                <span style={{
-                                                    fontSize: 10, fontWeight: 900, letterSpacing: "0.14em",
-                                                    color: "var(--color-text-subtle)", fontVariantNumeric: "tabular-nums",
-                                                }}>
-                                                    {agent.number}
-                                                </span>
-                                                {/* Icon box */}
-                                                <div style={{
-                                                    width: 36, height: 36, borderRadius: 4, flexShrink: 0,
-                                                    display: "flex", alignItems: "center", justifyContent: "center",
-                                                    transition: "background 0.25s",
-                                                    background: isHovered
-                                                        ? `hsl(${agent.accentHue} 35% 50% / 0.16)`
-                                                        : `hsl(${agent.accentHue} 35% 50% / 0.08)`,
-                                                }}>
-                                                    <IconComponent size={17} strokeWidth={1.8} style={{ color: `hsl(${agent.accentHue}, 35%, 55%)` }} />
-                                                </div>
-                                            </div>
-
-                                            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
-                                                {/* Type badge */}
-                                                <span style={{
-                                                    fontSize: 8, fontWeight: 900, letterSpacing: "0.14em",
-                                                    textTransform: "uppercase", padding: "3px 7px",
-                                                    background: "transparent",
-                                                    color: "var(--color-text-subtle)",
-                                                    border: "1px solid var(--color-border)",
-                                                }}>
-                                                    {agent.type}
-                                                </span>
-                                                {/* Port badge */}
-                                                <span style={{
-                                                    fontSize: 8, fontWeight: 700, letterSpacing: "0.1em",
-                                                    color: "var(--color-text-subtle)",
-                                                }}>
-                                                    :{agent.port}
-                                                </span>
-                                            </div>
-                                        </div>
-
-                                        {/* ── Title + Role ── */}
-                                        <div style={{ marginBottom: 10 }}>
-                                            <h3 style={{
-                                                fontSize: 14, fontWeight: 800, lineHeight: 1.3, marginBottom: 3,
-                                                color: "var(--color-text)",
-                                            }}>
-                                                {agent.title}
-                                            </h3>
-                                            <span style={{
-                                                fontSize: 10, fontWeight: 700, letterSpacing: "0.1em",
-                                                textTransform: "uppercase",
-                                                color: "var(--color-text-subtle)",
-                                            }}>
-                                                {agent.role}
-                                            </span>
-                                        </div>
-
-                                        {/* ── Description ── */}
-                                        <p style={{
-                                            fontSize: 12, lineHeight: 1.65,
-                                            color: "var(--color-text-muted)",
-                                            marginBottom: 16,
-                                        }}>
-                                            {agent.description}
-                                        </p>
-
-                                        {/* ── Capabilities ── */}
-                                        <div style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: 16 }}>
-                                            {agent.capabilities.map(cap => (
-                                                <div key={cap} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                                    <div style={{
-                                                        width: 4, height: 4, borderRadius: "50%", flexShrink: 0,
-                                                        background: "var(--color-text-subtle)",
-                                                    }} />
-                                                    <span style={{ fontSize: 11, color: "var(--color-text-subtle)" }}>
-                                                        {cap}
-                                                    </span>
-                                                </div>
-                                            ))}
-                                        </div>
-
-                                        {/* ── Footer ── */}
-                                        <div style={{
-                                            display: "flex", alignItems: "center", justifyContent: "space-between",
-                                            paddingTop: 12,
-                                            borderTop: "1px solid var(--color-border)",
-                                        }}>
-                                            <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                                                <div style={{
-                                                    width: 6, height: 6, borderRadius: "50%",
-                                                    background: "#10b981",
-                                                    boxShadow: "0 0 6px rgba(16,185,129,0.6)",
-                                                    animation: "pulse 2s infinite",
-                                                }} />
-                                                <span style={{ fontSize: 10, color: "var(--color-text-subtle)", fontWeight: 600, letterSpacing: "0.08em" }}>
-                                                    ready
-                                                </span>
-                                            </div>
-                                            <div style={{
-                                                display: "flex", alignItems: "center", gap: 4,
-                                                opacity: isHovered ? 1 : 0.4,
-                                                transition: "opacity 0.25s",
-                                            }}>
-                                                <span style={{ fontSize: 10, fontWeight: 700, color: "var(--color-text-subtle)", letterSpacing: "0.08em" }}>
-                                                    Explore
-                                                </span>
-                                                <ChevronRight size={10} strokeWidth={2.5} style={{
-                                                    color: "var(--color-text-subtle)",
-                                                    transform: isHovered ? "translateX(3px)" : "translateX(0)",
-                                                    transition: "transform 0.25s",
-                                                }} />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </button>
-                            );
-                        })}
-                    </div>
-
-                    {/* ── DIVIDER: FINAL OUTPUT ── */}
-                    <div style={{
-                        display: "flex", alignItems: "center", gap: 16,
-                        marginBottom: 20,
-                    }}>
-                        <div style={{ flex: 1, height: 1, background: "var(--color-border)" }} />
-                        <div style={{
-                            display: "flex", alignItems: "center", gap: 8,
-                            padding: "4px 14px",
-                            border: "1px solid hsl(25, 38%, 50%)",
-                            background: "hsl(25 38% 50% / 0.06)",
-                        }}>
-                            <FileText size={10} style={{ color: "hsl(25, 38%, 55%)" }} />
-                            <span style={{
-                                fontSize: 9, fontWeight: 900, letterSpacing: "0.2em",
-                                textTransform: "uppercase", color: "hsl(25, 38%, 55%)",
-                            }}>
-                                Final Output
-                            </span>
-                        </div>
-                        <div style={{ flex: 1, height: 1, background: "var(--color-border)" }} />
-                    </div>
-
-                    {/* ── EXPLANATION AGENT — STANDALONE WIDE CARD ── */}
-                    {(() => {
-                        const agent = explanationAgent;
-                        const IconComponent = agent.icon;
-                        const isHovered = hoveredAgent === agent.id;
-                        const isOpen = selectedAgent === "explanation";
-                        return (
-                            <div style={{ marginBottom: 32 }}>
-                                <button
-                                    onMouseEnter={() => setHoveredAgent(agent.id)}
-                                    onMouseLeave={() => setHoveredAgent(null)}
-                                    onClick={() => setSelectedAgent(isOpen ? null : "explanation")}
-                                    style={{
-                                        width: "100%", textAlign: "left",
-                                        position: "relative",
-                                        background: "var(--color-surface)",
-                                        borderTop: `1px solid ${isOpen ? "hsl(25, 38%, 50%)" : isHovered ? "var(--color-text-subtle)" : "var(--color-border)"}`,
-                                        borderRight: `1px solid ${isOpen ? "hsl(25, 38%, 50%)" : isHovered ? "var(--color-text-subtle)" : "var(--color-border)"}`,
-                                        borderBottom: `1px solid ${isOpen ? "hsl(25, 38%, 50%)" : isHovered ? "var(--color-text-subtle)" : "var(--color-border)"}`,
-                                        borderLeft: `3px solid hsl(25, 38%, 50%)`,
-                                        borderRadius: 0,
-                                        cursor: "pointer", padding: 0,
-                                        transition: "all 0.25s cubic-bezier(0.4,0,0.2,1)",
-                                        boxShadow: isHovered || isOpen ? "0 12px 40px rgba(0,0,0,0.14)" : "none",
-                                        overflow: "hidden",
-                                        opacity: visible ? 1 : 0,
-                                        transitionDelay: "0.35s",
-                                    }}
-                                >
-                                    <div style={{ padding: "20px 28px", display: "flex", alignItems: "center", gap: 28 }}>
-
-                                        {/* Left: number + icon */}
-                                        <div style={{ display: "flex", alignItems: "center", gap: 14, flexShrink: 0 }}>
-                                            <span style={{
-                                                fontSize: 10, fontWeight: 900, letterSpacing: "0.14em",
-                                                color: "var(--color-text-subtle)", fontVariantNumeric: "tabular-nums",
-                                            }}>
-                                                {agent.number}
-                                            </span>
-                                            <div style={{
-                                                width: 42, height: 42, borderRadius: 4, flexShrink: 0,
-                                                display: "flex", alignItems: "center", justifyContent: "center",
-                                                transition: "background 0.25s",
-                                                background: isHovered || isOpen
-                                                    ? `hsl(${agent.accentHue} 35% 50% / 0.18)`
-                                                    : `hsl(${agent.accentHue} 35% 50% / 0.09)`,
-                                            }}>
-                                                <IconComponent size={20} strokeWidth={1.8} style={{ color: `hsl(${agent.accentHue}, 35%, 55%)` }} />
-                                            </div>
-                                        </div>
-
-                                        {/* Middle: title + description */}
-                                        <div style={{ flex: 1, minWidth: 0 }}>
-                                            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-                                                <h3 style={{ fontSize: 15, fontWeight: 800, margin: 0, color: "var(--color-text)" }}>
-                                                    {agent.title}
-                                                </h3>
-                                                <span style={{
-                                                    fontSize: 9, fontWeight: 700, letterSpacing: "0.12em",
-                                                    textTransform: "uppercase", color: "var(--color-text-subtle)",
-                                                    padding: "2px 7px", border: "1px solid var(--color-border)",
-                                                }}>
-                                                    {agent.type}
-                                                </span>
-                                                <span style={{
-                                                    fontSize: 8, fontWeight: 700, letterSpacing: "0.1em",
-                                                    color: "var(--color-text-subtle)",
-                                                }}>
-                                                    :{agent.port}
-                                                </span>
-                                            </div>
-                                            <p style={{ fontSize: 12, color: "var(--color-text-muted)", margin: 0, lineHeight: 1.6 }}>
-                                                {agent.description}
-                                            </p>
-                                        </div>
-
-                                        {/* Right: capabilities + cta */}
-                                        <div style={{ display: "flex", alignItems: "center", gap: 24, flexShrink: 0 }}>
-                                            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                                                {agent.capabilities.map(cap => (
-                                                    <div key={cap} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                                                        <div style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--color-text-subtle)", flexShrink: 0 }} />
-                                                        <span style={{ fontSize: 11, color: "var(--color-text-subtle)" }}>{cap}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-
-                                            <div style={{
-                                                display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
-                                                paddingLeft: 24, borderLeft: "1px solid var(--color-border)",
-                                            }}>
-                                                <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                                                    <div style={{
-                                                        width: 6, height: 6, borderRadius: "50%",
-                                                        background: "#10b981",
-                                                        boxShadow: "0 0 6px rgba(16,185,129,0.6)",
-                                                        animation: "pulse 2s infinite",
-                                                    }} />
-                                                    <span style={{ fontSize: 10, color: "var(--color-text-subtle)", fontWeight: 600, letterSpacing: "0.08em" }}>ready</span>
-                                                </div>
-                                                <div style={{ display: "flex", alignItems: "center", gap: 4, opacity: isHovered || isOpen ? 1 : 0.4, transition: "opacity 0.25s" }}>
-                                                    <span style={{ fontSize: 10, fontWeight: 700, color: isOpen ? "hsl(25, 38%, 55%)" : "var(--color-text-subtle)", letterSpacing: "0.08em" }}>
-                                                        {isOpen ? "Close" : "History"}
-                                                    </span>
-                                                    <ChevronRight size={10} strokeWidth={2.5} style={{
-                                                        color: isOpen ? "hsl(25, 38%, 55%)" : "var(--color-text-subtle)",
-                                                        transform: isOpen ? "rotate(90deg)" : isHovered ? "translateX(3px)" : "translateX(0)",
-                                                        transition: "transform 0.25s",
-                                                    }} />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </button>
-
-                                {/* ── EXPLANATION HISTORY PANEL ── */}
-                                {isOpen && (
-                                    <div style={{ animation: "fadeSlideIn 0.3s cubic-bezier(0.22,1,0.36,1)" }}>
-                                        <ExplanationHistory />
-                                    </div>
-                                )}
-                            </div>
-                        );
-                    })()}
-                    <div style={{
-                        padding: "16px 24px",
-                        background: "var(--color-surface)",
-                        border: "1px solid var(--color-border)",
-                        borderLeft: "3px solid var(--color-accent)",
-                        display: "flex", alignItems: "center", gap: 14,
-                    }}>
-                        <Zap size={14} style={{ color: "var(--color-accent)", flexShrink: 0 }} />
-                        <p style={{ fontSize: 12, color: "var(--color-text-muted)", lineHeight: 1.65 }}>
-                            All agents run independently via <strong style={{ color: "var(--color-text)" }}>Docker Compose</strong> on ports 8001–8008.
-                            The <strong style={{ color: "var(--color-text)" }}>Drug Safety Agent (port 8004)</strong> is also published as a standalone{" "}
-                            <strong style={{ color: "var(--color-text)" }}>MCP server</strong> on the Prompt Opinion Marketplace.
-                            Individual agent pages with live API access will be available in a future release.
-                        </p>
-                    </div>
-
-                </div>
+          <div
+            style={{
+              background: "var(--color-surface)",
+              border: "1px solid var(--color-border)",
+              borderRadius: 14, padding: "20px 24px",
+              display: "flex", alignItems: "center", gap: 20,
+              transition: "all 0.22s ease", cursor: "default",
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = explanationAgent.color + "50"; e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = `0 8px 24px ${explanationAgent.color}12`; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--color-border)"; e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: "var(--color-text-subtle)", fontVariantNumeric: "tabular-nums" }}>
+                {explanationAgent.number}
+              </span>
+              <div style={{ width: 36, height: 36, borderRadius: 9, background: explanationAgent.color + "18", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <FileText size={16} strokeWidth={1.75} style={{ color: explanationAgent.color }} />
+              </div>
             </div>
 
-            <style>{`
-    @keyframes pulse {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.3; }
-    }
-    @keyframes fadeSlideIn {
-        from { opacity: 0; transform: translateY(12px); }
-        to   { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes spin {
-        from { transform: rotate(0deg); }
-        to   { transform: rotate(360deg); }
-    }
-`}</style>
+            <div style={{ flex: 1 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                <h3 style={{ fontSize: 14, fontWeight: 700, color: "var(--color-text)" }}>{explanationAgent.title}</h3>
+                <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: explanationAgent.color + "18", color: explanationAgent.color, letterSpacing: "0.1em", textTransform: "uppercase" }}>
+                  {explanationAgent.type}
+                </span>
+                <span style={{ fontSize: 10, color: "var(--color-text-subtle)", fontWeight: 600 }}>:{explanationAgent.port}</span>
+              </div>
+              <p style={{ fontSize: 12, color: "var(--color-text-muted)", lineHeight: 1.55, fontWeight: 400 }}>{explanationAgent.description}</p>
+            </div>
+
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, flexShrink: 0 }}>
+              {explanationAgent.capabilities.map(cap => (
+                <span key={cap} style={{
+                  fontSize: 10, fontWeight: 600, padding: "4px 10px", borderRadius: 20,
+                  background: explanationAgent.color + "15", color: explanationAgent.color,
+                }}>{cap}</span>
+              ))}
+            </div>
+          </div>
         </div>
-    );
+
+        {/* Explanation History */}
+        <ExplanationHistory />
+      </div>
+
+      <style>{`@keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.82)}}`}</style>
+    </AppLayout>
+  );
 }

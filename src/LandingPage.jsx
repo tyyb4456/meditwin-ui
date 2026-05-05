@@ -2,14 +2,11 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   User, Microscope, FlaskConical, Pill, Scan, BarChart2, Scale, FileText,
+  Activity, CheckCircle2, Zap, Shield, Brain, ChevronRight, ArrowRight,
 } from "lucide-react";
 import ThemeToggle from "./components/theme/ThemeToggle";
+import { useTheme } from "./components/theme/ThemeContext";
 
-/* ════════════════════════════════════════════════
-   HOOKS
-════════════════════════════════════════════════ */
-
-/** Fires once when element enters viewport */
 function useReveal(threshold = 0.1) {
   const ref = useRef(null);
   const [on, setOn] = useState(false);
@@ -26,8 +23,7 @@ function useReveal(threshold = 0.1) {
   return [ref, on];
 }
 
-/** Counts up from 0 → target with ease-out-cubic */
-function useCounter(target, active, ms = 1500) {
+function useCounter(target, active, ms = 1400) {
   const [val, setVal] = useState(0);
   useEffect(() => {
     if (!active) return;
@@ -36,8 +32,7 @@ function useCounter(target, active, ms = 1500) {
     const t0 = Date.now();
     const tick = () => {
       const p = Math.min((Date.now() - t0) / ms, 1);
-      const eased = 1 - (1 - p) ** 3;
-      setVal(Math.round(n * eased));
+      setVal(Math.round(n * (1 - (1 - p) ** 3)));
       if (p < 1) requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
@@ -45,12 +40,8 @@ function useCounter(target, active, ms = 1500) {
   return val;
 }
 
-/* ════════════════════════════════════════════════
-   DATA
-════════════════════════════════════════════════ */
-
 const agents = [
-  { id: 1, name: "Patient Context", icon: User, desc: "FHIR R4 data ingestion & normalization", tag: "A2A", input: "Patient ID + SHARP context headers", output: "Normalized FHIR R4 resource bundle", tech: "httpx async + fhirclient", note: "Injects context into all downstream agents via A2A headers." },
+  { id: 1, name: "Patient Context", icon: User, desc: "FHIR R4 data ingestion & normalisation", tag: "A2A", input: "Patient ID + SHARP context headers", output: "Normalized FHIR R4 resource bundle", tech: "httpx async + fhirclient", note: "Injects context into all downstream agents via A2A headers." },
   { id: 2, name: "Diagnosis", icon: Microscope, desc: "RAG-based differential diagnosis engine", tag: "A2A", input: "Symptoms, history, lab flags", output: "Ranked differential diagnoses (top 5)", tech: "LangChain + ChromaDB", note: "Retrieves from medical knowledge base; runs concurrently with Lab Analysis." },
   { id: 3, name: "Lab Analysis", icon: FlaskConical, desc: "Abnormality detection via rules engine", tag: "A2A", input: "Lab result values + reference ranges", output: "Flagged abnormalities + severity scores", tech: "Rules engine + LLM reasoning", note: "Parallel execution with Diagnosis via asyncio.gather()." },
   { id: 4, name: "Drug Safety", icon: Pill, desc: "FDA API — interactions & contraindications", tag: "MCP", input: "Current medications + proposed treatment", output: "Interaction warnings + severity grades", tech: "FDA OpenFDA API via MCP server", note: "Only external MCP-served agent; handles live drug database lookups." },
@@ -60,194 +51,234 @@ const agents = [
   { id: 8, name: "Explanation", icon: FileText, desc: "SOAP note + FHIR Bundle generation", tag: "A2A", input: "Consensus output", output: "SOAP note, FHIR Bundle, patient summary", tech: "Gemini-2.5-Flash", note: "Generates three output formats: clinician SOAP, structured FHIR, plain-language patient summary." },
 ];
 
-const questions = [
-  { q: "What is happening?", agents: "Diagnosis · Lab · Imaging", detail: "Diagnosis, Lab Analysis, and Imaging Triage agents work in parallel — RAG-based differential, abnormality detection, and CNN X-ray triage all fire simultaneously via asyncio.gather()." },
-  { q: "What will happen next?", agents: "Digital Twin", detail: "Digital Twin agent feeds the patient feature vector into an XGBoost model and simulates three treatment scenarios, returning outcome probability distributions for each path." },
-  { q: "What should we do?", agents: "Drug Safety · Consensus · Orchestrator", detail: "Drug Safety MCP flags all interactions against the FDA database, Consensus Agent arbitrates disagreements, and the Orchestrator routes to human escalation if confidence is below threshold." },
-];
-
 const steps = [
   { n: "01", title: "Patient Input", desc: "Clinician submits a patient ID. SHARP context is injected via A2A headers. The Orchestrator initialises the LangGraph state.", chips: ["Orchestrator", "Patient Context Agent"] },
-  { n: "02", title: "Parallel Analysis", desc: "Patient Context Agent fetches FHIR R4 resources. Diagnosis and Lab Analysis agents run concurrently via asyncio.gather() — no waiting.", chips: ["Diagnosis Agent", "Lab Analysis Agent", "asyncio.gather()"] },
-  { n: "03", title: "Specialist Review", desc: "Imaging Triage fires if an X-ray is attached. Drug Safety MCP flags interactions. Digital Twin simulates three treatment scenarios in parallel.", chips: ["Imaging Triage", "Drug Safety MCP", "Digital Twin"] },
-  { n: "04", title: "Consensus & Output", desc: "Consensus Agent resolves conflicts or escalates to a clinician. Explanation Agent generates SOAP note, FHIR Bundle, and patient summary.", chips: ["Consensus Agent", "Explanation Agent", "SOAP · FHIR · Summary"] },
+  { n: "02", title: "Parallel Analysis", desc: "Patient Context fetches FHIR R4 resources. Diagnosis and Lab Analysis agents run concurrently via asyncio.gather().", chips: ["Diagnosis Agent", "Lab Analysis Agent", "asyncio.gather()"] },
+  { n: "03", title: "Specialist Review", desc: "Imaging Triage fires if an X-ray is attached. Drug Safety MCP flags interactions. Digital Twin simulates three treatment paths.", chips: ["Imaging Triage", "Drug Safety MCP", "Digital Twin"] },
+  { n: "04", title: "Consensus & Output", desc: "Consensus Agent resolves conflicts or escalates. Explanation Agent generates SOAP note, FHIR Bundle, and patient summary.", chips: ["Consensus Agent", "Explanation Agent", "SOAP · FHIR · Summary"] },
 ];
 
-// ── Stack now includes Frontend entries ──────────────────
 const stack = [
-  // Backend
-  { label: "Graph Orchestration", val: "LangGraph", cat: "Backend" },
-  { label: "LLM Reasoning", val: "Gemini Flash 2.5", cat: "Backend" },
-  { label: "RAG Pipeline", val: "LangChain + ChromaDB", cat: "Backend" },
-  { label: "Medical Imaging", val: "TensorFlow / Keras CNN", cat: "Backend" },
-  { label: "Risk Modeling", val: "XGBoost", cat: "Backend" },
-  { label: "FHIR Client", val: "httpx async + fhirclient", cat: "Backend" },
-  { label: "Caching", val: "Redis", cat: "Backend" },
-  { label: "API Framework", val: "FastAPI", cat: "Backend" },
-  { label: "Deployment", val: "Docker Compose", cat: "Backend" },
+  { label: "Graph Orchestration", val: "LangGraph" },
+  { label: "LLM Reasoning", val: "Gemini Flash 2.5" },
+  { label: "RAG Pipeline", val: "LangChain + ChromaDB" },
+  { label: "Medical Imaging", val: "TensorFlow / Keras CNN" },
+  { label: "Risk Modeling", val: "XGBoost" },
+  { label: "FHIR Client", val: "httpx async + fhirclient" },
+  { label: "Caching", val: "Redis" },
+  { label: "API Framework", val: "FastAPI" },
+  { label: "Deployment", val: "Docker Compose" },
 ];
 
-/* ════════════════════════════════════════════════
-   STAT COUNTER ITEM
-════════════════════════════════════════════════ */
-function StatItem({ val, label, active, delay = 0 }) {
-  const numericVal = parseInt(val, 10);
-  const isNumeric = !isNaN(numericVal);
-  const counted = useCounter(numericVal, active);
+const features = [
+  { icon: Zap, title: "Parallel Execution", desc: "Diagnosis, Lab Analysis, and Imaging Triage run concurrently via asyncio.gather() — no serial bottlenecks." },
+  { icon: Shield, title: "FHIR R4 Compliant", desc: "Full FHIR R4 resource ingestion via httpx async client. Normalized PatientState shared across all agents." },
+  { icon: Brain, title: "Consensus-Driven", desc: "LangGraph state machine arbitrates disagreements and escalates to clinicians when confidence falls below threshold." },
+  { icon: Activity, title: "Real-Time SSE", desc: "Every agent streams progress via Server-Sent Events. Watch the pipeline execute live, step by step." },
+];
 
+/* ── Hero floating cards ─────────────────────────────────── */
+function LiveAnalysisCard() {
+  const agentStatuses = [
+    { name: "Patient Context", done: true },
+    { name: "Diagnosis", done: true },
+    { name: "Lab Analysis", done: true },
+    { name: "Drug Safety", active: true },
+    { name: "Imaging Triage", pending: true },
+    { name: "Digital Twin", pending: true },
+  ];
   return (
-    <div
-      style={{
-        opacity: active ? 1 : 0,
-        transform: active ? "translateY(0)" : "translateY(16px)",
-        transition: `opacity 0.6s ease ${delay}ms, transform 0.6s ease ${delay}ms`,
-      }}
-    >
-      <p className="text-[var(--color-text)] text-2xl font-black tracking-tight tabular-nums">
+    <div style={{
+      background: "rgba(22, 20, 48, 0.95)", backdropFilter: "blur(20px)",
+      border: "1px solid rgba(129,140,248,0.25)", borderRadius: 14, padding: "16px 18px",
+      minWidth: 240, boxShadow: "0 24px 60px rgba(0,0,0,0.6)",
+      animation: "float-card 5s ease-in-out infinite",
+    }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+        <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#818CF8", animation: "pulse-dot 2s infinite" }} />
+        <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#818CF8" }}>
+          Live Analysis
+        </span>
+      </div>
+      {agentStatuses.map(a => (
+        <div key={a.name} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+          <span style={{ fontSize: 12, color: a.done ? "rgba(238,240,255,0.7)" : a.active ? "#EEF0FF" : "rgba(238,240,255,0.35)", fontWeight: a.active ? 600 : 400 }}>
+            {a.name}
+          </span>
+          {a.done && <CheckCircle2 size={13} style={{ color: "#818CF8" }} />}
+          {a.active && (
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <div style={{ width: 48, height: 3, background: "rgba(129,140,248,0.2)", borderRadius: 2, overflow: "hidden" }}>
+                <div style={{ width: "62%", height: "100%", background: "#818CF8", borderRadius: 2, animation: "progress-run 1.8s ease-in-out infinite" }} />
+              </div>
+            </div>
+          )}
+          {a.pending && <span style={{ width: 8, height: 8, borderRadius: "50%", background: "rgba(238,240,255,0.12)", display: "inline-block" }} />}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function PatientCard() {
+  return (
+    <div style={{
+      background: "rgba(30, 28, 58, 0.95)", backdropFilter: "blur(20px)",
+      border: "1px solid rgba(129,140,248,0.15)", borderRadius: 14, padding: "14px 16px",
+      minWidth: 200, boxShadow: "0 16px 48px rgba(0,0,0,0.5)",
+      animation: "float-card 5s ease-in-out infinite 1.5s",
+    }}>
+      <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "rgba(238,240,255,0.45)", marginBottom: 10 }}>
+        Agent Output
+      </p>
+      {[
+        { label: "Diagnosis", val: "Confirmed", color: "#818CF8" },
+        { label: "Lab Flags", val: "3 Abnormal", color: "#F59E0B" },
+        { label: "Drug Safety", val: "1 Warning", color: "#EF4444" },
+      ].map(row => (
+        <div key={row.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+          <span style={{ fontSize: 12, color: "rgba(238,240,255,0.6)", fontWeight: 400 }}>{row.label}</span>
+          <span style={{ fontSize: 12, fontWeight: 700, color: row.color }}>{row.val}</span>
+        </div>
+      ))}
+      <div style={{
+        marginTop: 10, paddingTop: 10, borderTop: "1px solid rgba(129,140,248,0.12)",
+        display: "flex", alignItems: "center", gap: 6,
+      }}>
+        <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#818CF8" }}>
+          SOAP Note generated ✓
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/* ── Stat item ────────────────────────────────────────────── */
+function StatItem({ val, label, active, delay = 0 }) {
+  const n = parseInt(val, 10);
+  const counted = useCounter(n, active);
+  const isNumeric = !isNaN(n);
+  return (
+    <div style={{
+      opacity: active ? 1 : 0, transform: active ? "translateY(0)" : "translateY(12px)",
+      transition: `opacity 0.6s ease ${delay}ms, transform 0.6s ease ${delay}ms`,
+    }}>
+      <p style={{ fontSize: "clamp(24px,3vw,32px)", fontWeight: 700, color: "var(--color-text)", letterSpacing: "-0.03em", lineHeight: 1 }}>
         {isNumeric ? counted : val}
       </p>
-      <p className="text-[var(--color-text-muted)] text-xs font-bold tracking-[0.15em] uppercase mt-1">
+      <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--color-text-subtle)", marginTop: 5 }}>
         {label}
       </p>
     </div>
   );
 }
 
-/* ════════════════════════════════════════════════
-   MAIN COMPONENT
-════════════════════════════════════════════════ */
 export default function LandingPage() {
   const navigate = useNavigate();
-
-  // hero entrance
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
   const [heroVisible, setHeroVisible] = useState(false);
-
-  // rotating clinical questions
   const [activeQ, setActiveQ] = useState(0);
+  const [selectedAgent, setSelectedAgent] = useState(null);
+  const [activeStep, setActiveStep] = useState(null);
+  const [activeNav, setActiveNav] = useState("");
+  const [scrollProgress, setScrollProgress] = useState(0);
   const qTimerRef = useRef(null);
 
-  // expandable agent rows
-  const [selectedAgent, setSelectedAgent] = useState(null);
-
-  // expandable pipeline steps
-  const [activeStep, setActiveStep] = useState(null);
-
-  // active nav tab
-  const [activeNav, setActiveNav] = useState("agents");
-
-  // scroll progress (0–1)
-  const [scrollProgress, setScrollProgress] = useState(0);
-
-  // section reveal hooks
   const [statsRef, statsOn] = useReveal(0.2);
-  const [questRef, questOn] = useReveal(0.1);
+  const [featRef, featOn] = useReveal(0.1);
   const [agentsRef, agentsOn] = useReveal(0.05);
   const [pipeRef, pipeOn] = useReveal(0.05);
   const [stackRef, stackOn] = useReveal(0.05);
-  const [imagingRef, imagingOn] = useReveal(0.05);
-  const [twinRef, twinOn] = useReveal(0.05);
+  const [imagingRef, imagingOn] = useReveal(0.1);
+  const [twinRef, twinOn] = useReveal(0.1);
   const [ctaRef, ctaOn] = useReveal(0.2);
 
-  /* ── lifecycle ──────────────────────────────── */
   useEffect(() => {
-    const heroTimer = setTimeout(() => setHeroVisible(true), 80);
-
-    // auto-cycle questions
-    startQTimer();
-
-    // scroll progress
+    const t = setTimeout(() => setHeroVisible(true), 80);
+    qTimerRef.current = setInterval(() => setActiveQ(p => (p + 1) % 3), 4500);
     const onScroll = () => {
       const doc = document.documentElement;
-      const scrolled = doc.scrollTop || document.body.scrollTop;
       const total = doc.scrollHeight - doc.clientHeight;
-      setScrollProgress(total > 0 ? scrolled / total : 0);
+      setScrollProgress(total > 0 ? (doc.scrollTop || document.body.scrollTop) / total : 0);
     };
     window.addEventListener("scroll", onScroll, { passive: true });
-
-    return () => {
-      clearTimeout(heroTimer);
-      clearInterval(qTimerRef.current);
-      window.removeEventListener("scroll", onScroll);
-    };
+    return () => { clearTimeout(t); clearInterval(qTimerRef.current); window.removeEventListener("scroll", onScroll); };
   }, []);
 
-  const startQTimer = () => {
-    clearInterval(qTimerRef.current);
-    qTimerRef.current = setInterval(
-      () => setActiveQ((p) => (p + 1) % 3),
-      4500
-    );
-  };
-
-  const handleSelectQ = (i) => { setActiveQ(i); startQTimer(); };
-  const handleSelectAgent = (i) => setSelectedAgent((p) => (p === i ? null : i));
-  const handleSelectStep = (i) => setActiveStep((p) => (p === i ? null : i));
-  const scrollToSection = (id, nav) => {
+  const scrollTo = (id, nav) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
     setActiveNav(nav);
   };
 
-  /* ── group stack by category ────────────────── */
-  const stackByCategory = stack.reduce((acc, item) => {
-    acc[item.cat] = acc[item.cat] || [];
-    acc[item.cat].push(item);
-    return acc;
-  }, {});
+  /* ── HERO BG — respects theme ────────────────────────────── */
+  const heroBg = isDark
+    ? "linear-gradient(135deg, #08061A 0%, #0E0C28 40%, #13113A 70%, #08061A 100%)"
+    : "linear-gradient(135deg, #f5f4ff 0%, #ede9fe 40%, #f5f4ff 70%, #eef2ff 100%)";
 
-  /* ════════════════════════════════════════════
-     RENDER
-  ════════════════════════════════════════════ */
   return (
-    <div className="min-h-screen bg-[var(--color-bg)] font-sans overflow-x-hidden">
+    <div style={{ minHeight: "100vh", background: "var(--color-bg)", overflowX: "hidden" }}>
 
-      {/* ── SCROLL PROGRESS BAR ─────────────────── */}
-      <div
-        className="fixed top-0 left-0 z-[999] h-[2px] bg-[var(--color-accent)] origin-left"
-        style={{
-          transform: `scaleX(${scrollProgress})`,
-          transition: "transform 0.1s linear",
-          transformOrigin: "left",
-          width: "100%",
-        }}
-      />
+      {/* Scroll progress */}
+      <div style={{
+        position: "fixed", top: 0, left: 0, right: 0, zIndex: 999,
+        height: 2, background: "var(--color-accent)",
+        transformOrigin: "left", transform: `scaleX(${scrollProgress})`,
+        transition: "transform 0.1s linear",
+      }} />
 
-      {/* ── NAV ─────────────────────────────────── */}
-      <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-8 py-4 bg-[var(--color-bg)]/90 backdrop-blur-sm border-b border-[var(--color-border)]">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-[var(--color-primary)] rounded-sm flex items-center justify-center">
-            <span className="text-[var(--color-bg)] text-xs font-black tracking-tighter">MT</span>
+      {/* ── NAV ──────────────────────────────────────────────── */}
+      <nav style={{
+        position: "fixed", top: 0, left: 0, right: 0, zIndex: 50,
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: "0 40px", height: 64,
+        background: isDark ? "rgba(8,6,26,0.9)" : "rgba(255,255,255,0.92)",
+        backdropFilter: "blur(20px)",
+        borderBottom: `1px solid ${isDark ? "rgba(129,140,248,0.12)" : "var(--color-border)"}`,
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ width: 32, height: 32, borderRadius: 8, background: "var(--color-accent)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Activity size={16} strokeWidth={2.2} style={{ color: "#fff" }} />
           </div>
-          <span className="text-[var(--color-text)] text-sm font-bold tracking-[0.2em] uppercase">
-            MediTwin AI
+          <span style={{ fontSize: 15, fontWeight: 700, color: "var(--color-text)", letterSpacing: "-0.01em" }}>
+            Medi<span style={{ color: "var(--color-accent)" }}>Twin</span> AI
           </span>
         </div>
 
-        <div className="hidden md:flex items-center gap-8 text-xs font-bold tracking-[0.15em] uppercase">
-          {[
-            ["agents", "Agents", "agents-section"],
-            ["pipeline", "Pipeline", "how-section"],
-            ["stack", "Stack", "stack-section"],
-          ].map(([key, label, id]) => (
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {[["Agents", "agents-section", "agents"], ["Pipeline", "pipeline-section", "pipeline"], ["Stack", "stack-section", "stack"]].map(([label, id, key]) => (
             <button
               key={key}
-              onClick={() => scrollToSection(id, key)}
-              className={`transition-colors pb-0.5 border-b-2 ${activeNav === key
-                ? "text-[var(--color-text)] border-[var(--color-accent)]"
-                : "text-[var(--color-text-muted)] border-transparent hover:text-[var(--color-text)]"
-                }`}
+              onClick={() => scrollTo(id, key)}
+              style={{
+                border: "none", cursor: "pointer",
+                padding: "6px 14px", borderRadius: 20,
+                fontSize: 13, fontWeight: 500, letterSpacing: "0.01em",
+                color: activeNav === key ? "var(--color-text)" : "var(--color-text-muted)",
+                background: activeNav === key ? "var(--color-accent-dim)" : "transparent",
+                transition: "all 0.2s ease",
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = "var(--color-surface-2)"; e.currentTarget.style.color = "var(--color-text)"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = activeNav === key ? "var(--color-accent-dim)" : "transparent"; e.currentTarget.style.color = activeNav === key ? "var(--color-text)" : "var(--color-text-muted)"; }}
             >
               {label}
             </button>
           ))}
         </div>
 
-        <div className="flex items-center gap-3">
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <ThemeToggle />
           <button
             onClick={() => navigate("/dashboard")}
-            className="px-5 py-2 border border-[var(--color-accent)] text-[var(--color-accent)] text-xs font-bold tracking-[0.15em] uppercase hover:bg-[var(--color-accent)] hover:text-[var(--color-bg)] transition-all duration-300"
+            style={{
+              padding: "9px 22px", background: "var(--color-accent)", color: "#fff",
+              border: "none", borderRadius: 24, fontSize: 13, fontWeight: 600, letterSpacing: "0.01em",
+              transition: "all 0.2s ease", display: "flex", alignItems: "center", gap: 6,
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = "var(--color-accent-hover)"; e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 6px 20px rgba(99,102,241,0.4)"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "var(--color-accent)"; e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}
           >
-            Launch Demo
+            Get Started <ArrowRight size={14} />
           </button>
         </div>
       </nav>
@@ -255,297 +286,235 @@ export default function LandingPage() {
       {/* ══════════════════════════════════════════
           HERO
       ══════════════════════════════════════════ */}
-      <section className="relative pt-32 pb-24 px-8 min-h-screen flex flex-col justify-center overflow-hidden">
-        {/* Animated grid bg */}
-        <div
-          className="absolute inset-0 opacity-[0.04] dark:opacity-[0.08] pointer-events-none"
-          style={{
-            backgroundImage:
-              "linear-gradient(var(--color-text) 1px, transparent 1px), linear-gradient(90deg, var(--color-text) 1px, transparent 1px)",
-            backgroundSize: "60px 60px",
-            animation: "gridShift 20s linear infinite",
-          }}
-        />
+      <section style={{ background: heroBg, minHeight: "100vh", position: "relative", overflow: "hidden", display: "flex", alignItems: "center", paddingTop: 64 }}>
 
-        {/* Doctor image — constrained to right 55% only */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{ zIndex: 0, overflow: "hidden" }}  // ← clips at page edge only
-        >
-          <div
-            className="absolute top-0 bottom-0"
-            style={{ left: "45%", right: "0", overflow: "visible" }}  // ← blur bleeds left freely
-          >
-            <img
-              src="/hero-doctor.png"
-              alt=""
-              className="w-full h-full object-cover"
-              style={{
-                objectPosition: "30% center",
-                filter: "blur(2.5px) brightness(0.70) saturate(1.0)",
-              }}
-            />
-            {/* Solid left fade — covers the bleed zone completely */}
-            <div
-              className="absolute inset-0"
-              style={{
-                background: "linear-gradient(to right, var(--color-bg) 0%, var(--color-bg) 20%, transparent 55%)",
-                left: "-80px",  // ← extends past div left edge to cover blurred bleed
-              }}
-            />
-            <div className="absolute inset-0" style={{ background: "linear-gradient(to left, var(--color-bg) 0%, transparent 8%)" }} />
-            <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, var(--color-bg) 0%, transparent 12%)" }} />
-            <div className="absolute inset-0" style={{ background: "linear-gradient(to top, var(--color-bg) 0%, transparent 15%)" }} />
+        {/* Animated grid overlay */}
+        <div style={{
+          position: "absolute", inset: 0, pointerEvents: "none",
+          backgroundImage: "linear-gradient(rgba(129,140,248,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(129,140,248,0.05) 1px, transparent 1px)",
+          backgroundSize: "64px 64px", animation: "gridShift 28s linear infinite",
+        }} />
+
+        {/* Radial glow */}
+        <div style={{
+          position: "absolute", top: "20%", right: "15%", width: 500, height: 500,
+          borderRadius: "50%", background: "radial-gradient(circle, rgba(129,140,248,0.15) 0%, transparent 70%)",
+          pointerEvents: "none", animation: "glow-pulse 6s ease-in-out infinite",
+        }} />
+
+        <div style={{
+          maxWidth: 1200, margin: "0 auto", width: "100%", padding: "80px 40px",
+          display: "grid", gridTemplateColumns: "1fr 1fr", gap: 60, alignItems: "center",
+          position: "relative", zIndex: 1,
+          opacity: heroVisible ? 1 : 0, transform: heroVisible ? "translateY(0)" : "translateY(28px)",
+          transition: "opacity 0.9s cubic-bezier(0.22,1,0.36,1), transform 0.9s cubic-bezier(0.22,1,0.36,1)",
+        }}>
+
+          {/* LEFT — text */}
+          <div>
+            {/* Pills */}
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 28, animation: "fadeSlideUp 0.8s 0.1s both" }}>
+              {["✦ Multi-Agent", "✦ FHIR R4", "✦ Real-Time SSE"].map(p => (
+                <span key={p} style={{
+                  padding: "5px 14px", borderRadius: 20,
+                  border: "1px solid rgba(129,140,248,0.3)",
+                  background: "var(--color-accent-dim)",
+                  fontSize: 12, fontWeight: 500, color: "var(--color-text-muted)",
+                }}>
+                  {p}
+                </span>
+              ))}
+            </div>
+
+            {/* Headline */}
+            <h1 style={{
+              fontSize: "clamp(42px,6vw,72px)", fontWeight: 700, lineHeight: 1.05,
+              letterSpacing: "-0.035em", color: "var(--color-text)", marginBottom: 20,
+              animation: "fadeSlideUp 0.9s 0.18s both",
+            }}>
+              Clinical AI That<br />
+              Thinks Like a<br />
+              <span style={{ color: "var(--color-accent)" }}>Medical Team</span>
+            </h1>
+
+            {/* Subtext */}
+            <p style={{
+              fontSize: 16, fontWeight: 400, lineHeight: 1.65, color: "var(--color-text-muted)",
+              maxWidth: 460, marginBottom: 36,
+              animation: "fadeSlideUp 0.9s 0.28s both",
+            }}>
+              Eight specialist AI agents — from FHIR data ingestion to consensus diagnosis — working in parallel to give every clinician a team of experts.
+            </p>
+
+            {/* CTAs */}
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap", animation: "fadeSlideUp 0.9s 0.38s both" }}>
+              <button
+                onClick={() => navigate("/dashboard")}
+                style={{
+                  padding: "13px 28px", background: "var(--color-accent)", color: "#fff",
+                  border: "none", borderRadius: 26, fontSize: 14, fontWeight: 600,
+                  display: "flex", alignItems: "center", gap: 8, transition: "all 0.22s ease",
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = "var(--color-accent-hover)"; e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 28px rgba(99,102,241,0.4)"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "var(--color-accent)"; e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}
+              >
+                Launch Demo <ArrowRight size={16} />
+              </button>
+              <button
+                onClick={() => scrollTo("pipeline-section", "pipeline")}
+                style={{
+                  padding: "13px 28px", background: "var(--color-surface)", color: "var(--color-text-muted)",
+                  border: "1px solid var(--color-border-strong)", borderRadius: 26, fontSize: 14, fontWeight: 500,
+                  display: "flex", alignItems: "center", gap: 8, transition: "all 0.22s ease",
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = "var(--color-surface-2)"; e.currentTarget.style.borderColor = "var(--color-accent)"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "var(--color-surface)"; e.currentTarget.style.borderColor = "var(--color-border-strong)"; }}
+              >
+                ▶ View Pipeline
+              </button>
+            </div>
+
+            {/* Stats */}
+            <div ref={statsRef} style={{
+              marginTop: 52, paddingTop: 36, borderTop: "1px solid var(--color-border)",
+              display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 24,
+            }}>
+              {[
+                { val: "8", label: "Specialist Agents" },
+                { val: "3", label: "Clinical Questions" },
+                { val: "FHIR R4", label: "Standards Compliant" },
+              ].map(({ val, label }, i) => (
+                <StatItem key={label} val={val} label={label} active={statsOn} delay={i * 110} />
+              ))}
+            </div>
+          </div>
+
+          {/* RIGHT — floating cards + image */}
+          <div style={{ position: "relative", height: 520 }}>
+
+            {/* Doctor image */}
+            <div style={{
+              position: "absolute", inset: 0, borderRadius: 20, overflow: "hidden",
+              border: "1px solid rgba(129,140,248,0.2)",
+              boxShadow: isDark ? "0 24px 64px rgba(0,0,0,0.6)" : "0 24px 64px rgba(129,140,248,0.15)",
+            }}>
+              <img
+                src="/hero-doctor.png" alt="Clinical AI"
+                style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top", filter: isDark ? "brightness(0.55) saturate(0.8)" : "brightness(0.85) saturate(0.9)" }}
+              />
+              <div style={{ position: "absolute", inset: 0, background: isDark ? "linear-gradient(to bottom, transparent 40%, rgba(8,6,26,0.85) 100%)" : "linear-gradient(to bottom, transparent 40%, rgba(245,244,255,0.75) 100%)" }} />
+            </div>
+
+            {/* Floating card 1 — top right */}
+            <div style={{ position: "absolute", top: 24, right: -20, zIndex: 10, animation: "fadeSlideRight 0.8s 0.6s both" }}>
+              <LiveAnalysisCard />
+            </div>
+
+            {/* Floating card 2 — bottom left */}
+            <div style={{ position: "absolute", bottom: 32, left: -16, zIndex: 10, animation: "fadeSlideUp 0.8s 0.8s both" }}>
+              <PatientCard />
+            </div>
           </div>
         </div>
 
-        {/* Accent glow — keep but softer since image is present */}
-        <div
-          className="absolute bottom-1/4 -left-24 w-80 h-80 pointer-events-none"
-          style={{
-            background: "radial-gradient(circle, var(--color-accent) 0%, transparent 70%)",
-            opacity: 0.03,
-            animation: "pulse 8s ease-in-out infinite reverse",
-            zIndex: 0,
-          }}
-        />
+        {/* Bottom fade into next section */}
+        <div style={{
+          position: "absolute", bottom: 0, left: 0, right: 0, height: 100,
+          background: "linear-gradient(to bottom, transparent, var(--color-bg))",
+          pointerEvents: "none",
+        }} />
+      </section>
 
-        <div
-          className="max-w-6xl mx-auto w-full relative"
-          style={{
-            zIndex: 1,
-            opacity: heroVisible ? 1 : 0,
-            transform: heroVisible ? "translateY(0)" : "translateY(40px)",
-            transition: "opacity 1s cubic-bezier(0.22,1,0.36,1), transform 1s cubic-bezier(0.22,1,0.36,1)",
-          }}
-        >
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 mb-8 px-4 py-2 border border-[var(--color-border)] bg-[var(--color-accent)]/5">
-            <span className="w-2 h-2 bg-[var(--color-accent)] rounded-full animate-pulse" />
-            <span className="text-[var(--color-text)] text-xs font-bold tracking-[0.2em] uppercase">
-              Agents Assemble · Healthcare AI Hackathon
-            </span>
+      {/* ══════════════════════════════════════════
+          FEATURES
+      ══════════════════════════════════════════ */}
+      <section ref={featRef} style={{ padding: "96px 40px", background: "var(--color-bg)" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+          <div style={{
+            textAlign: "center", marginBottom: 56,
+            opacity: featOn ? 1 : 0, transform: featOn ? "translateY(0)" : "translateY(16px)",
+            transition: "opacity 0.6s ease, transform 0.6s ease",
+          }}>
+            <p style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.24em", textTransform: "uppercase", color: "var(--color-accent)", marginBottom: 12 }}>
+              Why MediTwin
+            </p>
+            <h2 style={{ fontSize: "clamp(28px,5vw,48px)", fontWeight: 700, letterSpacing: "-0.03em", color: "var(--color-text)", lineHeight: 1.1 }}>
+              Built for clinical speed<br />and accuracy
+            </h2>
           </div>
 
-          {/* Headline */}
-          <h1
-            className="text-[clamp(52px,9vw,120px)] font-black leading-[0.9] tracking-[-0.02em] uppercase text-[var(--color-text)] mb-6"
-            style={{ animation: "fadeSlideUp 0.9s 0.15s both" }}
-          >
-            Medi<br />
-            <span className="text-transparent" style={{ WebkitTextStroke: "2px var(--color-text)" }}>
-              Twin
-            </span>
-            <span className="text-[var(--color-text)]"> AI</span>
-          </h1>
-
-          {/* Sub */}
-          <p
-            className="max-w-xl text-[var(--color-text-muted)] text-lg font-medium mb-4 leading-relaxed"
-            style={{ animation: "fadeSlideUp 0.9s 0.3s both" }}
-          >
-            A multi-agent clinical decision support system that mirrors how real clinical teams work — eight specialists, one unified output.
-          </p>
-          <p
-            className="text-[var(--color-text-subtle)] text-sm font-bold tracking-[0.2em] uppercase mb-12 italic"
-            style={{ animation: "fadeSlideUp 0.9s 0.45s both" }}
-          >
-            "What is happening? What will happen next? What should we do?"
-          </p>
-
-          {/* CTA buttons */}
-          <div
-            className="flex flex-wrap gap-4"
-            style={{ animation: "fadeSlideUp 0.9s 0.55s both" }}
-          >
-            <button
-              onClick={() => navigate("/dashboard")}
-              className="group relative px-10 py-4 bg-[var(--color-accent)] text-[var(--color-bg)] text-sm font-black tracking-[0.2em] uppercase overflow-hidden hover:scale-[1.02] transition-transform duration-300"
-            >
-              <span className="relative z-10">Get Started →</span>
-              <div className="absolute inset-0 bg-[var(--color-accent-hover)] -translate-x-full group-hover:translate-x-0 transition-transform duration-300" />
-            </button>
-            <button
-              onClick={() => scrollToSection("how-section", "pipeline")}
-              className="px-10 py-4 border-2 border-[var(--color-accent)] text-[var(--color-accent)] text-sm font-black tracking-[0.2em] uppercase hover:bg-[var(--color-accent)]/5 transition-all duration-300"
-            >
-              View Pipeline
-            </button>
-          </div>
-
-          {/* Stats — animated counters */}
-          <div
-            ref={statsRef}
-            className="mt-16 flex flex-wrap gap-x-12 gap-y-6 border-t border-[var(--color-border)] pt-10"
-          >
-            {[
-              { val: "8", label: "Specialist Agents" },
-              { val: "3", label: "Core Questions" },
-              { val: "FHIR R4", label: "Standards Compliant" },
-            ].map(({ val, label }, i) => (
-              <StatItem key={label} val={val} label={label} active={statsOn} delay={i * 120} />
-            ))}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12 }}>
+            {features.map((f, i) => {
+              const Icon = f.icon;
+              return (
+                <div
+                  key={f.title}
+                  style={{
+                    background: "var(--color-surface)", border: "1px solid var(--color-border)",
+                    borderRadius: 14, padding: "28px 24px",
+                    opacity: featOn ? 1 : 0, transform: featOn ? "translateY(0)" : "translateY(16px)",
+                    transition: `opacity 0.5s ease ${i * 80 + 100}ms, transform 0.5s ease ${i * 80 + 100}ms`,
+                    cursor: "default",
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--color-accent)"; e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.style.boxShadow = "0 12px 40px rgba(99,102,241,0.15)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--color-border)"; e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}
+                >
+                  <div style={{
+                    width: 40, height: 40, borderRadius: 10, background: "var(--color-accent-dim)",
+                    display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18,
+                  }}>
+                    <Icon size={18} strokeWidth={1.75} style={{ color: "var(--color-accent)" }} />
+                  </div>
+                  <h3 style={{ fontSize: 15, fontWeight: 700, color: "var(--color-text)", marginBottom: 8, letterSpacing: "-0.01em" }}>{f.title}</h3>
+                  <p style={{ fontSize: 13, color: "var(--color-text-muted)", lineHeight: 1.6, fontWeight: 400 }}>{f.desc}</p>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
 
       {/* ══════════════════════════════════════════
-          THREE QUESTIONS
+          THREE CLINICAL QUESTIONS — accent strip
       ══════════════════════════════════════════ */}
-      <section
-        ref={questRef}
-        className="relative py-20 px-8 overflow-hidden"
-        style={{ background: "var(--color-accent)" }}
-      >
-        <div
-          className="absolute inset-0 opacity-[0.06] pointer-events-none"
-          style={{
-            backgroundImage:
-              "linear-gradient(var(--color-bg) 1px, transparent 1px), linear-gradient(90deg, var(--color-bg) 1px, transparent 1px)",
-            backgroundSize: "48px 48px",
-          }}
-        />
-        <div
-          className="absolute top-0 right-1/4 w-96 h-96 rounded-full pointer-events-none"
-          style={{ background: "radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%)" }}
-        />
-
-        <div className="max-w-6xl mx-auto relative">
-          {/* Header */}
-          <div
-            className="flex items-center gap-4 mb-12"
-            style={{
-              opacity: questOn ? 1 : 0,
-              transform: questOn ? "translateY(0)" : "translateY(20px)",
-              transition: "opacity 0.7s ease, transform 0.7s ease",
-            }}
-          >
-            <div className="w-8 h-px" style={{ background: "rgba(255,255,255,0.3)" }} />
-            <p className="text-[var(--color-bg)]/40 text-[10px] font-black tracking-[0.4em] uppercase">
-              The Three Clinical Questions
-            </p>
-          </div>
-
-          <div className="flex flex-col gap-px">
-            {questions.map((item, i) => {
-              const isActive = activeQ === i;
-              const agentList = item.agents.split(" · ");
-              return (
-                <div
-                  key={i}
-                  style={{
-                    opacity: questOn ? 1 : 0,
-                    transform: questOn ? "translateX(0)" : "translateX(-24px)",
-                    transition: `opacity 0.6s ease ${i * 120 + 200}ms, transform 0.6s ease ${i * 120 + 200}ms`,
-                  }}
-                >
-                  <button
-                    onClick={() => handleSelectQ(i)}
-                    className="w-full text-left group"
-                    style={{
-                      padding: "28px 0",
-                      borderBottom: "1px solid rgba(255,255,255,0.08)",
-                      display: "flex",
-                      alignItems: "flex-start",
-                      gap: "32px",
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontWeight: 900,
-                        fontSize: "clamp(36px, 5vw, 56px)",
-                        lineHeight: 1,
-                        letterSpacing: "-0.03em",
-                        color: isActive ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.15)",
-                        transition: "color 0.35s ease",
-                        minWidth: "72px",
-                        flexShrink: 0,
-                        fontVariantNumeric: "tabular-nums",
-                      }}
-                    >
-                      {["01", "02", "03"][i]}
-                    </span>
-
-                    <div className="flex-1 pt-1">
-                      <p
-                        style={{
-                          fontSize: "clamp(18px, 3vw, 26px)",
-                          fontWeight: 900,
-                          textTransform: "uppercase",
-                          letterSpacing: "-0.01em",
-                          lineHeight: 1.1,
-                          color: isActive ? "rgba(255,255,255,1)" : "rgba(255,255,255,0.55)",
-                          transition: "color 0.35s ease",
-                          marginBottom: "12px",
-                        }}
-                      >
-                        {item.q}
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        {agentList.map((ag) => (
-                          <span
-                            key={ag}
-                            style={{
-                              fontSize: "10px",
-                              fontWeight: 700,
-                              letterSpacing: "0.12em",
-                              textTransform: "uppercase",
-                              padding: "3px 8px",
-                              border: `1px solid ${isActive ? "rgba(255,255,255,0.4)" : "rgba(255,255,255,0.15)"}`,
-                              color: isActive ? "rgba(255,255,255,0.8)" : "rgba(255,255,255,0.3)",
-                              transition: "all 0.35s ease",
-                              borderRadius: "2px",
-                            }}
-                          >
-                            {ag}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="18" height="18" viewBox="0 0 24 24"
-                      fill="none" stroke="currentColor" strokeWidth="2.5"
-                      strokeLinecap="round" strokeLinejoin="round"
-                      style={{
-                        flexShrink: 0,
-                        marginTop: "4px",
-                        color: isActive ? "rgba(255,255,255,0.7)" : "rgba(255,255,255,0.2)",
-                        transform: isActive ? "translateX(6px)" : "translateX(0)",
-                        transition: "all 0.35s ease",
-                      }}
-                    >
-                      <line x1="5" y1="12" x2="19" y2="12" />
-                      <polyline points="12 5 19 12 12 19" />
-                    </svg>
-                  </button>
-
-                  {/* Expanded detail */}
-                  <div
-                    style={{
-                      maxHeight: isActive ? "160px" : "0",
-                      opacity: isActive ? 1 : 0,
-                      overflow: "hidden",
-                      transition: "all 0.4s cubic-bezier(0.4,0,0.2,1)",
-                    }}
-                  >
-                    <div
-                      style={{
-                        padding: "20px 0 20px 32px",
-                        borderBottom: "1px solid rgba(255,255,255,0.08)",
-                        borderLeft: "2px solid rgba(255,255,255,0.5)",
-                        marginLeft: "104px",
-                      }}
-                    >
-                      <p style={{ fontSize: "13px", lineHeight: 1.7, color: "rgba(255,255,255,0.65)", maxWidth: "680px" }}>
-                        {item.detail}
-                      </p>
-                    </div>
-                  </div>
+      <section style={{ padding: "80px 40px", background: "var(--color-surface)", borderTop: "1px solid var(--color-border)", borderBottom: "1px solid var(--color-border)" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+          <p style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.24em", textTransform: "uppercase", color: "var(--color-accent)", marginBottom: 16 }}>
+            The Three Clinical Questions
+          </p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 1, background: "var(--color-border)", borderRadius: 14, overflow: "hidden" }}>
+            {[
+              { n: "01", q: "What is happening?", agents: "Diagnosis · Lab · Imaging", detail: "Diagnosis, Lab Analysis, and Imaging Triage agents work in parallel via asyncio.gather()." },
+              { n: "02", q: "What will happen next?", agents: "Digital Twin", detail: "Digital Twin simulates three treatment scenarios using XGBoost, returning probability distributions." },
+              { n: "03", q: "What should we do?", agents: "Drug Safety · Consensus", detail: "Drug Safety MCP flags interactions, Consensus arbitrates, Orchestrator escalates if confidence drops." },
+            ].map((item, i) => (
+              <div
+                key={i}
+                style={{
+                  background: activeQ === i ? "var(--color-accent-dim)" : "var(--color-surface)",
+                  padding: "32px 28px", cursor: "pointer", transition: "background 0.25s ease",
+                  borderLeft: activeQ === i ? `3px solid var(--color-accent)` : "3px solid transparent",
+                }}
+                onClick={() => setActiveQ(activeQ === i ? -1 : i)}
+                onMouseEnter={e => { if (activeQ !== i) e.currentTarget.style.background = "var(--color-bg)"; }}
+                onMouseLeave={e => { if (activeQ !== i) e.currentTarget.style.background = "var(--color-surface)"; }}
+              >
+                <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--color-text-subtle)", marginBottom: 10 }}>{item.n}</p>
+                <h3 style={{ fontSize: 20, fontWeight: 700, color: "var(--color-text)", letterSpacing: "-0.02em", marginBottom: 12, lineHeight: 1.2 }}>{item.q}</h3>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 14 }}>
+                  {item.agents.split(" · ").map(ag => (
+                    <span key={ag} style={{
+                      fontSize: 10, fontWeight: 600, padding: "3px 9px", borderRadius: 20,
+                      background: "var(--color-accent-dim)", color: "var(--color-accent)",
+                      letterSpacing: "0.06em",
+                    }}>{ag}</span>
+                  ))}
                 </div>
-              );
-            })}
+                {activeQ === i && (
+                  <p style={{ fontSize: 13, color: "var(--color-text-muted)", lineHeight: 1.65, fontWeight: 400 }}>{item.detail}</p>
+                )}
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -553,140 +522,92 @@ export default function LandingPage() {
       {/* ══════════════════════════════════════════
           AGENTS GRID
       ══════════════════════════════════════════ */}
-      <section id="agents-section" className="py-24 px-8">
-        <div className="max-w-6xl mx-auto">
-
-          {/* Header */}
-          <div
-            ref={agentsRef}
-            className="flex items-end justify-between mb-6"
-            style={{
-              opacity: agentsOn ? 1 : 0,
-              transform: agentsOn ? "translateY(0)" : "translateY(20px)",
-              transition: "opacity 0.7s ease, transform 0.7s ease",
-            }}
-          >
+      <section id="agents-section" style={{ padding: "96px 40px" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+          <div ref={agentsRef} style={{
+            display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 40,
+            opacity: agentsOn ? 1 : 0, transform: agentsOn ? "translateY(0)" : "translateY(14px)",
+            transition: "opacity 0.6s ease, transform 0.6s ease",
+          }}>
             <div>
-              <p className="text-[var(--color-text-subtle)] text-xs font-bold tracking-[0.3em] uppercase mb-3">The Team</p>
-              <h2 className="text-5xl font-black uppercase tracking-tight text-[var(--color-text)]">
-                8 Specialist<br />Agents
+              <p style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.24em", textTransform: "uppercase", color: "var(--color-accent)", marginBottom: 10 }}>The Team</p>
+              <h2 style={{ fontSize: "clamp(32px,5vw,52px)", fontWeight: 700, letterSpacing: "-0.03em", color: "var(--color-text)", lineHeight: 1 }}>
+                8 Specialist Agents
               </h2>
             </div>
-            <div className="hidden md:flex items-center gap-3">
-              <span className="px-3 py-1 bg-[var(--color-accent)] text-[var(--color-bg)] text-xs font-bold">A2A</span>
-              <span className="text-[var(--color-text-subtle)] text-xs">Agent-to-Agent</span>
-              <span className="px-3 py-1 border border-[var(--color-accent)] text-[var(--color-accent)] text-xs font-bold ml-3">MCP</span>
-              <span className="text-[var(--color-text-subtle)] text-xs">MCP Server</span>
+            <div style={{ display: "flex", gap: 8 }}>
+              <span style={{ padding: "4px 12px", borderRadius: 20, background: "var(--color-accent)", color: "#fff", fontSize: 11, fontWeight: 700 }}>A2A</span>
+              <span style={{ padding: "4px 12px", borderRadius: 20, border: "1px solid var(--color-accent)", color: "var(--color-accent)", fontSize: 11, fontWeight: 700 }}>MCP</span>
             </div>
           </div>
-          <p
-            className="text-[var(--color-text-subtle)] text-xs mb-10"
-            style={{
-              opacity: agentsOn ? 1 : 0,
-              transition: "opacity 0.7s ease 0.2s",
-            }}
-          >
-            Click any agent to inspect its inputs, outputs, and tech.
-          </p>
 
-          {/* Agent rows */}
-          <div className="flex flex-col divide-y divide-[var(--color-border)] border border-[var(--color-border)]">
+          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
             {agents.map((agent, i) => {
-              const IconComponent = agent.icon;
+              const Icon = agent.icon;
               const isSelected = selectedAgent === i;
               return (
-                <div
-                  key={agent.id}
-                  style={{
-                    opacity: agentsOn ? 1 : 0,
-                    transform: agentsOn ? "translateX(0)" : "translateX(-20px)",
-                    transition: `opacity 0.5s ease ${i * 60 + 100}ms, transform 0.5s ease ${i * 60 + 100}ms`,
-                  }}
-                >
+                <div key={agent.id} style={{
+                  opacity: agentsOn ? 1 : 0, transform: agentsOn ? "translateX(0)" : "translateX(-14px)",
+                  transition: `opacity 0.5s ease ${i * 50 + 100}ms, transform 0.5s ease ${i * 50 + 100}ms`,
+                }}>
                   <button
-                    onClick={() => handleSelectAgent(i)}
-                    className={`w-full text-left flex items-center gap-5 px-6 py-5 transition-all duration-300 group ${isSelected
-                      ? "bg-[var(--color-accent)]"
-                      : "bg-[var(--color-bg)] hover:bg-[var(--color-surface)]"
-                      }`}
+                    onClick={() => setSelectedAgent(p => p === i ? null : i)}
+                    style={{
+                      width: "100%", textAlign: "left", background: "none", border: "none", cursor: "pointer",
+                      display: "flex", alignItems: "center", gap: 16, padding: "16px 22px",
+                      background: isSelected ? "var(--color-accent-dim)" : "var(--color-surface)",
+                      borderRadius: isSelected ? "12px 12px 0 0" : 12,
+                      border: `1px solid ${isSelected ? "var(--color-accent)" : "var(--color-border)"}`,
+                      borderBottom: isSelected ? "none" : `1px solid var(--color-border)`,
+                      transition: "all 0.22s ease",
+                    }}
+                    onMouseEnter={e => { if (!isSelected) { e.currentTarget.style.background = "var(--color-surface-2)"; e.currentTarget.style.borderColor = "var(--color-border-strong)"; } }}
+                    onMouseLeave={e => { if (!isSelected) { e.currentTarget.style.background = "var(--color-surface)"; e.currentTarget.style.borderColor = "var(--color-border)"; } }}
                   >
-                    <span
-                      className={`text-xs font-black tabular-nums shrink-0 w-6 transition-colors duration-300 ${isSelected ? "text-[var(--color-bg)]/40" : "text-[var(--color-text-subtle)]"
-                        }`}
-                    >
+                    <span style={{ fontSize: 11, fontWeight: 700, minWidth: 24, color: "var(--color-text-subtle)", fontVariantNumeric: "tabular-nums" }}>
                       {String(agent.id).padStart(2, "0")}
                     </span>
-
-                    <div
-                      className={`w-8 h-8 rounded-sm flex items-center justify-center shrink-0 transition-all duration-300 ${isSelected
-                        ? "bg-[var(--color-bg)]/15"
-                        : "bg-[var(--color-accent)]/10 group-hover:bg-[var(--color-accent)]/20"
-                        }`}
-                    >
-                      <IconComponent
-                        size={15}
-                        className={`transition-colors duration-300 ${isSelected ? "text-[var(--color-bg)]" : "text-[var(--color-accent)]"
-                          }`}
-                        strokeWidth={1.75}
-                      />
+                    <div style={{
+                      width: 34, height: 34, borderRadius: 8, flexShrink: 0,
+                      background: isSelected ? "rgba(99,102,241,0.25)" : "var(--color-accent-dim)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      transition: "background 0.22s",
+                    }}>
+                      <Icon size={15} strokeWidth={1.75} style={{ color: "var(--color-accent)" }} />
                     </div>
-
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 mb-1">
-                        <h3
-                          className={`text-sm font-black uppercase tracking-tight transition-colors duration-300 ${isSelected ? "text-[var(--color-bg)]" : "text-[var(--color-text)]"
-                            }`}
-                        >
-                          {agent.name}
-                        </h3>
-                        <span
-                          className={`text-[10px] font-black tracking-widest px-2 py-0.5 shrink-0 transition-all duration-300 ${agent.tag === "MCP"
-                            ? isSelected
-                              ? "border border-[var(--color-bg)] text-[var(--color-bg)]"
-                              : "border border-[var(--color-accent)] text-[var(--color-accent)]"
-                            : isSelected
-                              ? "bg-[var(--color-bg)] text-[var(--color-accent)]"
-                              : "bg-[var(--color-accent)] text-[var(--color-bg)]"
-                            }`}
-                        >
-                          {agent.tag}
-                        </span>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
+                        <h3 style={{ fontSize: 14, fontWeight: 600, color: "var(--color-text)", letterSpacing: "-0.01em" }}>{agent.name}</h3>
+                        <span style={{
+                          fontSize: 9, fontWeight: 700, padding: "2px 8px", borderRadius: 20, letterSpacing: "0.1em",
+                          background: agent.tag === "MCP" ? "transparent" : "var(--color-accent)",
+                          border: agent.tag === "MCP" ? "1px solid var(--color-accent)" : "none",
+                          color: agent.tag === "MCP" ? "var(--color-accent)" : "#fff",
+                        }}>{agent.tag}</span>
                       </div>
-                      <p
-                        className={`text-xs leading-relaxed transition-colors duration-300 ${isSelected ? "text-[var(--color-bg)]/60" : "text-[var(--color-text-muted)]"
-                          }`}
-                      >
-                        {agent.desc}
-                      </p>
+                      <p style={{ fontSize: 12, color: "var(--color-text-muted)", fontWeight: 400 }}>{agent.desc}</p>
                     </div>
-
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
-                      fill="none" stroke="currentColor" strokeWidth="2.5"
-                      strokeLinecap="round" strokeLinejoin="round"
-                      className={`shrink-0 transition-all duration-300 ${isSelected ? "text-[var(--color-bg)]/50 rotate-180" : "text-[var(--color-text-subtle)] rotate-0"
-                        }`}
-                    >
-                      <polyline points="6 9 12 15 18 9" />
-                    </svg>
+                    <ChevronRight size={14} style={{
+                      color: "var(--color-text-subtle)", transition: "transform 0.25s ease",
+                      transform: isSelected ? "rotate(90deg)" : "rotate(0deg)",
+                    }} />
                   </button>
 
-                  {/* Expanded detail */}
-                  <div className={`overflow-hidden transition-all duration-300 ${isSelected ? "max-h-64 opacity-100" : "max-h-0 opacity-0"}`}>
-                    <div className="px-6 py-5 bg-[var(--color-surface)] border-t border-[var(--color-border)] grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                      {[
-                        ["→ Input", agent.input],
-                        ["← Output", agent.output],
-                        ["⚙ Tech", agent.tech],
-                        ["✎ Note", agent.note],
-                      ].map(([label, val]) => (
+                  {isSelected && (
+                    <div style={{
+                      background: "var(--color-surface-2)",
+                      border: `1px solid var(--color-accent)`, borderTop: "none",
+                      borderRadius: "0 0 12px 12px", padding: "20px 22px",
+                      display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 20,
+                    }}>
+                      {[["Input", agent.input], ["Output", agent.output], ["Tech", agent.tech], ["Note", agent.note]].map(([label, val]) => (
                         <div key={label}>
-                          <p className="text-[10px] font-black tracking-[0.2em] uppercase text-[var(--color-accent)] mb-2">{label}</p>
-                          <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">{val}</p>
+                          <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--color-accent)", marginBottom: 6 }}>{label}</p>
+                          <p style={{ fontSize: 12, color: "var(--color-text-muted)", lineHeight: 1.55, fontWeight: 400 }}>{val}</p>
                         </div>
                       ))}
                     </div>
-                  </div>
+                  )}
                 </div>
               );
             })}
@@ -695,68 +616,96 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════════════════════════════════════
-          PIPELINE / HOW IT WORKS
+          PIPELINE
       ══════════════════════════════════════════ */}
-      <section id="how-section" className="py-24 px-8 bg-[var(--color-accent)]/5">
-        <div className="max-w-6xl mx-auto">
-          <div
-            ref={pipeRef}
-            style={{
-              opacity: pipeOn ? 1 : 0,
-              transform: pipeOn ? "translateY(0)" : "translateY(20px)",
-              transition: "opacity 0.7s ease, transform 0.7s ease",
-            }}
-          >
-            <p className="text-[var(--color-text-subtle)] text-xs font-bold tracking-[0.3em] uppercase mb-3">Workflow</p>
-            <h2 className="text-5xl font-black uppercase tracking-tight text-[var(--color-text)] mb-4">Pipeline</h2>
-            <p className="text-[var(--color-text-subtle)] text-xs mb-10">Click a step to highlight.</p>
+      <section id="pipeline-section" style={{ padding: "96px 40px", background: "var(--color-surface)", borderTop: "1px solid var(--color-border)" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+          <div ref={pipeRef} style={{
+            opacity: pipeOn ? 1 : 0, transform: pipeOn ? "translateY(0)" : "translateY(14px)",
+            transition: "opacity 0.6s ease, transform 0.6s ease", marginBottom: 48,
+          }}>
+            <p style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.24em", textTransform: "uppercase", color: "var(--color-accent)", marginBottom: 10 }}>Workflow</p>
+            <h2 style={{ fontSize: "clamp(28px,5vw,52px)", fontWeight: 700, letterSpacing: "-0.03em", color: "var(--color-text)", lineHeight: 1 }}>
+              The Pipeline
+            </h2>
           </div>
 
-          <div className="space-y-px">
-            {steps.map((step, i) => (
-              <div
-                key={step.n}
-                style={{
-                  opacity: pipeOn ? 1 : 0,
-                  transform: pipeOn ? "translateX(0)" : "translateX(-24px)",
-                  transition: `opacity 0.5s ease ${i * 100 + 200}ms, transform 0.5s ease ${i * 100 + 200}ms`,
-                }}
-              >
-                <button
-                  onClick={() => handleSelectStep(i)}
-                  className={`w-full text-left flex gap-8 p-8 border-l-4 transition-all duration-300 cursor-pointer ${activeStep === i
-                    ? "bg-[var(--color-surface)] border-[var(--color-accent)]"
-                    : "bg-[var(--color-bg)] border-transparent hover:border-[var(--color-accent)]/30 hover:bg-[var(--color-surface)]"
-                    }`}
-                >
-                  <p
-                    className={`text-5xl font-black shrink-0 leading-none transition-colors duration-300 ${activeStep === i ? "text-[var(--color-text)]/20" : "text-[var(--color-text)]/10"
-                      }`}
+          <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+            {steps.map((step, i) => {
+              const isActive = activeStep === i;
+              return (
+                <div key={step.n} style={{
+                  opacity: pipeOn ? 1 : 0, transform: pipeOn ? "translateX(0)" : "translateX(-16px)",
+                  transition: `opacity 0.5s ease ${i * 90 + 150}ms, transform 0.5s ease ${i * 90 + 150}ms`,
+                }}>
+                  <button
+                    onClick={() => setActiveStep(p => p === i ? null : i)}
+                    style={{
+                      width: "100%", textAlign: "left", background: "none", border: "none", cursor: "pointer",
+                      display: "flex", alignItems: "flex-start", gap: 24, padding: "24px 28px",
+                      background: isActive ? "var(--color-accent-dim)" : "transparent",
+                      borderRadius: 12, borderLeft: `3px solid ${isActive ? "var(--color-accent)" : "transparent"}`,
+                      transition: "all 0.22s ease",
+                    }}
+                    onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = "var(--color-bg)"; e.currentTarget.style.borderLeftColor = "var(--color-border-strong)"; } }}
+                    onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderLeftColor = "transparent"; } }}
                   >
-                    {step.n}
-                  </p>
-                  <div>
-                    <h3 className="text-lg font-black uppercase tracking-tight text-[var(--color-text)] mb-2">
-                      {step.title}
-                    </h3>
-                    <p className="text-sm text-[var(--color-text-muted)] leading-relaxed max-w-xl mb-3">
-                      {step.desc}
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {step.chips.map((chip) => (
-                        <span
-                          key={chip}
-                          className={`text-xs px-2 py-1 font-bold tracking-wide transition-all duration-300 ${activeStep === i
-                            ? "bg-[var(--color-accent)] text-[var(--color-bg)]"
-                            : "bg-[var(--color-accent)]/10 text-[var(--color-text-muted)]"
-                            }`}
-                        >
-                          {chip}
-                        </span>
-                      ))}
+                    <p style={{
+                      fontSize: "clamp(36px,5vw,56px)", fontWeight: 700, flexShrink: 0, lineHeight: 1,
+                      letterSpacing: "-0.04em", fontVariantNumeric: "tabular-nums",
+                      color: isActive ? "var(--color-accent)" : "var(--color-border-strong)",
+                      transition: "color 0.22s",
+                    }}>{step.n}</p>
+                    <div style={{ paddingTop: 4 }}>
+                      <h3 style={{ fontSize: 17, fontWeight: 700, color: "var(--color-text)", marginBottom: 8, letterSpacing: "-0.01em" }}>{step.title}</h3>
+                      <p style={{ fontSize: 13, color: "var(--color-text-muted)", lineHeight: 1.6, maxWidth: 560, marginBottom: 14, fontWeight: 400 }}>{step.desc}</p>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                        {step.chips.map(chip => (
+                          <span key={chip} style={{
+                            fontSize: 11, fontWeight: 600, padding: "4px 12px", borderRadius: 20,
+                            background: isActive ? "var(--color-accent)" : "var(--color-accent-dim)",
+                            color: isActive ? "#fff" : "var(--color-accent)", transition: "all 0.22s",
+                          }}>{chip}</span>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                </button>
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════
+          TECH STACK
+      ══════════════════════════════════════════ */}
+      <section id="stack-section" style={{ padding: "96px 40px" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+          <div ref={stackRef} style={{
+            opacity: stackOn ? 1 : 0, transform: stackOn ? "translateY(0)" : "translateY(14px)",
+            transition: "opacity 0.6s ease, transform 0.6s ease", marginBottom: 48,
+          }}>
+            <p style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.24em", textTransform: "uppercase", color: "var(--color-accent)", marginBottom: 10 }}>Technology</p>
+            <h2 style={{ fontSize: "clamp(28px,5vw,52px)", fontWeight: 700, letterSpacing: "-0.03em", color: "var(--color-text)", lineHeight: 1 }}>
+              The Stack
+            </h2>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(210px, 1fr))", gap: 1, background: "var(--color-border)", borderRadius: 14, overflow: "hidden" }}>
+            {stack.map((item, j) => (
+              <div
+                key={item.label}
+                style={{
+                  background: "var(--color-surface)", padding: "22px 24px", cursor: "default",
+                  opacity: stackOn ? 1 : 0, transform: stackOn ? "translateY(0)" : "translateY(10px)",
+                  transition: `opacity 0.5s ease ${j * 50 + 150}ms, transform 0.5s ease ${j * 50 + 150}ms`,
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = "var(--color-accent-dim)"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "var(--color-surface)"; }}
+              >
+                <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--color-text-subtle)", marginBottom: 7 }}>{item.label}</p>
+                <p style={{ fontSize: 14, fontWeight: 700, color: "var(--color-text)", letterSpacing: "-0.01em" }}>{item.val}</p>
               </div>
             ))}
           </div>
@@ -764,190 +713,81 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════════════════════════════════════
-          TECH STACK  (Backend + Frontend grouped)
-      ══════════════════════════════════════════ */}
-      <section id="stack-section" className="py-24 px-8">
-        <div className="max-w-6xl mx-auto">
-          <div
-            ref={stackRef}
-            style={{
-              opacity: stackOn ? 1 : 0,
-              transform: stackOn ? "translateY(0)" : "translateY(20px)",
-              transition: "opacity 0.7s ease, transform 0.7s ease",
-            }}
-          >
-            <p className="text-[var(--color-text-subtle)] text-xs font-bold tracking-[0.3em] uppercase mb-3">Technology</p>
-            <h2 className="text-5xl font-black uppercase tracking-tight text-[var(--color-text)] mb-16">Stack</h2>
-          </div>
-
-          {Object.entries(stackByCategory).map(([cat, items], catIdx) => (
-            <div key={cat} className="mb-12 last:mb-0">
-              {/* Category label */}
-              <div
-                className="flex items-center gap-4 mb-4"
-                style={{
-                  opacity: stackOn ? 1 : 0,
-                  transform: stackOn ? "translateX(0)" : "translateX(-12px)",
-                  transition: `opacity 0.5s ease ${catIdx * 150 + 100}ms, transform 0.5s ease ${catIdx * 150 + 100}ms`,
-                }}
-              >
-                <span className="text-[10px] font-black tracking-[0.3em] uppercase text-[var(--color-accent)]">
-                  {cat}
-                </span>
-                <div className="flex-1 h-px bg-[var(--color-border)]" />
-              </div>
-
-              {/* Cards */}
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-px bg-[var(--color-border)]">
-                {items.map((item, j) => {
-                  const totalDelay = catIdx * 150 + j * 60 + 200;
-                  return (
-                    <div
-                      key={item.label}
-                      className="relative bg-[var(--color-bg)] p-6 overflow-hidden group cursor-default"
-                      style={{
-                        opacity: stackOn ? 1 : 0,
-                        transform: stackOn ? "translateY(0)" : "translateY(16px)",
-                        transition: `opacity 0.5s ease ${totalDelay}ms, transform 0.5s ease ${totalDelay}ms`,
-                      }}
-                    >
-                      {/* Hover fill */}
-                      <div className="absolute inset-0 bg-[var(--color-accent)]/5 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
-
-                      {/* Content */}
-                      <div className="relative z-10">
-                        <p className="text-xs font-bold tracking-[0.15em] uppercase text-[var(--color-text-subtle)] mb-2">
-                          {item.label}
-                        </p>
-                        <p className="text-base font-black text-[var(--color-text)] group-hover:text-[var(--color-accent)] group-hover:translate-x-1 transition-all duration-300">
-                          {item.val}
-                        </p>
-                      </div>
-
-                      {/* Corner accent */}
-                      <div className="absolute bottom-0 right-0 w-0 h-0 border-[12px] border-transparent border-b-[var(--color-accent)]/10 border-r-[var(--color-accent)]/10 group-hover:border-b-[var(--color-accent)]/20 group-hover:border-r-[var(--color-accent)]/20 transition-colors duration-300" />
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════
           IMAGING TRIAGE METRICS
       ══════════════════════════════════════════ */}
-      <section id="imaging-metrics" className="py-24 px-8 bg-[var(--color-bg-elevated)]">
-        <div className="max-w-6xl mx-auto">
-          <div
-            ref={imagingRef}
-            style={{
-              opacity: imagingOn ? 1 : 0,
-              transform: imagingOn ? "translateY(0)" : "translateY(20px)",
-              transition: "opacity 0.7s ease, transform 0.7s ease",
-            }}
-          >
-            <p className="text-[var(--color-text-subtle)] text-xs font-bold tracking-[0.3em] uppercase mb-3">Model Performance</p>
-            <h2 className="text-5xl font-black uppercase tracking-tight text-[var(--color-text)] mb-4">Imaging Triage</h2>
-            <p className="text-[var(--color-text-muted)] text-base font-medium mb-16 max-w-3xl">
+      <section id="imaging-metrics" style={{ padding: "96px 40px", background: "var(--color-surface)" }}>
+        <div style={{ maxWidth: 1152, margin: "0 auto" }}>
+          <div ref={imagingRef} style={{ opacity: imagingOn ? 1 : 0, transform: imagingOn ? "translateY(0)" : "translateY(20px)", transition: "opacity 0.7s ease, transform 0.7s ease" }}>
+            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.3em", textTransform: "uppercase", color: "var(--color-text-subtle)", marginBottom: 12 }}>Model Performance</p>
+            <h2 style={{ fontSize: "clamp(32px,4vw,48px)", fontWeight: 900, textTransform: "uppercase", letterSpacing: "-0.03em", color: "var(--color-text)", marginBottom: 16 }}>Imaging Triage</h2>
+            <p style={{ color: "var(--color-text-muted)", fontSize: 15, fontWeight: 500, marginBottom: 64, maxWidth: 700 }}>
               Chest X-ray pneumonia detection using deep learning CNNs trained on 5,856 images.
-              Production model achieves <span className="text-[var(--color-accent)] font-bold">95.5% accuracy</span> and <span className="text-[var(--color-accent)] font-bold">99.2% AUC</span>.
+              Production model achieves <span style={{ color: "var(--color-accent)", fontWeight: 700 }}>95.5% accuracy</span> and <span style={{ color: "var(--color-accent)", fontWeight: 700 }}>99.2% AUC</span>.
             </p>
           </div>
 
           {/* Model comparison grid */}
-          <div className="grid lg:grid-cols-2 gap-px bg-[var(--color-border)]">
-            {/* Custom CNN */}
-            <div
-              className="bg-[var(--color-bg)] p-8 group hover:bg-[var(--color-accent)]/5 transition-colors duration-300"
-              style={{
-                opacity: imagingOn ? 1 : 0,
-                transform: imagingOn ? "translateY(0)" : "translateY(16px)",
-                transition: "opacity 0.6s ease 100ms, transform 0.6s ease 100ms",
-              }}
-            >
-              <div className="flex items-start justify-between mb-6">
-                <div>
-                  <h3 className="text-2xl font-black text-[var(--color-text)] mb-2">Custom CNN</h3>
-                  <p className="text-xs font-bold tracking-[0.15em] uppercase text-[var(--color-text-subtle)]">Baseline Architecture</p>
-                </div>
-                <Scan className="w-8 h-8 text-[var(--color-accent)]/30 group-hover:text-[var(--color-accent)]/50 transition-colors duration-300" />
-              </div>
-
-              <div className="space-y-4">
-                {[
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 1, background: "var(--color-border)" }}>
+            {[
+              {
+                title: "Custom CNN", subtitle: "Baseline Architecture", production: false, delay: 100, metrics: [
                   { label: "Accuracy", value: "94.69%", raw: 0.9469 },
                   { label: "AUC", value: "98.26%", raw: 0.9826 },
                   { label: "Precision", value: "94.29%", raw: 0.9429 },
                   { label: "Recall", value: "98.73%", raw: 0.9873 },
-                ].map((metric, i) => (
-                  <div key={metric.label} className="flex justify-between items-center">
-                    <span className="text-xs font-bold tracking-[0.1em] uppercase text-[var(--color-text-muted)]">{metric.label}</span>
-                    <div className="flex items-center gap-3">
-                      <div className="w-32 h-1.5 bg-[var(--color-border)] rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-[var(--color-accent)] transition-all duration-1000 ease-out"
-                          style={{
-                            width: imagingOn ? `${metric.raw * 100}%` : "0%",
-                            transitionDelay: `${i * 100 + 200}ms`,
-                          }}
-                        />
-                      </div>
-                      <span className="text-lg font-black text-[var(--color-text)] tabular-nums w-20 text-right">{metric.value}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* EfficientNetB0 */}
-            <div
-              className="bg-[var(--color-bg)] p-8 group hover:bg-[var(--color-accent)]/5 transition-colors duration-300 relative"
-              style={{
-                opacity: imagingOn ? 1 : 0,
-                transform: imagingOn ? "translateY(0)" : "translateY(16px)",
-                transition: "opacity 0.6s ease 200ms, transform 0.6s ease 200ms",
-              }}
-            >
-              {/* Production badge */}
-              <div className="absolute top-4 right-4 px-3 py-1 bg-[var(--color-accent)] text-[var(--color-bg)] text-[9px] font-black tracking-[0.2em] uppercase">
-                PRODUCTION
-              </div>
-
-              <div className="flex items-start justify-between mb-6">
-                <div>
-                  <h3 className="text-2xl font-black text-[var(--color-text)] mb-2">EfficientNetB0</h3>
-                  <p className="text-xs font-bold tracking-[0.15em] uppercase text-[var(--color-text-subtle)]">Transfer Learning</p>
-                </div>
-                <Scan className="w-8 h-8 text-[var(--color-accent)]/30 group-hover:text-[var(--color-accent)]/50 transition-colors duration-300" />
-              </div>
-
-              <div className="space-y-4">
-                {[
+                ]
+              },
+              {
+                title: "EfficientNetB0", subtitle: "Transfer Learning", production: true, delay: 200, metrics: [
                   { label: "Accuracy", value: "95.52%", raw: 0.9552 },
                   { label: "AUC", value: "99.15%", raw: 0.9915 },
                   { label: "Precision", value: "98.55%", raw: 0.9855 },
                   { label: "Recall", value: "95.27%", raw: 0.9527 },
-                ].map((metric, i) => (
-                  <div key={metric.label} className="flex justify-between items-center">
-                    <span className="text-xs font-bold tracking-[0.1em] uppercase text-[var(--color-text-muted)]">{metric.label}</span>
-                    <div className="flex items-center gap-3">
-                      <div className="w-32 h-1.5 bg-[var(--color-border)] rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-[var(--color-accent)] transition-all duration-1000 ease-out"
-                          style={{
+                ]
+              },
+            ].map((model) => (
+              <div
+                key={model.title}
+                style={{
+                  background: "var(--color-bg)", padding: 32, position: "relative",
+                  opacity: imagingOn ? 1 : 0, transform: imagingOn ? "translateY(0)" : "translateY(16px)",
+                  transition: `opacity 0.6s ease ${model.delay}ms, transform 0.6s ease ${model.delay}ms`,
+                  cursor: "default",
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = "var(--color-accent-dim)"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "var(--color-bg)"; }}
+              >
+                {model.production && (
+                  <div style={{
+                    position: "absolute", top: 16, right: 16,
+                    padding: "3px 10px", background: "var(--color-accent)",
+                    color: "#fff", fontSize: 9, fontWeight: 900, letterSpacing: "0.2em", textTransform: "uppercase",
+                    borderRadius: 3,
+                  }}>PRODUCTION</div>
+                )}
+                <div style={{ marginBottom: 24 }}>
+                  <h3 style={{ fontSize: 22, fontWeight: 900, color: "var(--color-text)", marginBottom: 6 }}>{model.title}</h3>
+                  <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: "var(--color-text-subtle)" }}>{model.subtitle}</p>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                  {model.metrics.map((metric, i) => (
+                    <div key={metric.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--color-text-muted)" }}>{metric.label}</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                        <div style={{ width: 128, height: 5, background: "var(--color-border)", borderRadius: 3, overflow: "hidden" }}>
+                          <div style={{
+                            height: "100%", background: "var(--color-accent)", borderRadius: 3,
                             width: imagingOn ? `${metric.raw * 100}%` : "0%",
-                            transitionDelay: `${i * 100 + 300}ms`,
-                          }}
-                        />
+                            transition: `width 1s ease ${i * 100 + model.delay + 100}ms`,
+                          }} />
+                        </div>
+                        <span style={{ fontSize: 17, fontWeight: 900, color: "var(--color-text)", fontVariantNumeric: "tabular-nums", minWidth: 72, textAlign: "right" }}>{metric.value}</span>
                       </div>
-                      <span className="text-lg font-black text-[var(--color-text)] tabular-nums w-20 text-right">{metric.value}</span>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
+            ))}
           </div>
         </div>
       </section>
@@ -955,26 +795,19 @@ export default function LandingPage() {
       {/* ══════════════════════════════════════════
           DIGITAL TWIN METRICS
       ══════════════════════════════════════════ */}
-      <section id="twin-metrics" className="py-24 px-8">
-        <div className="max-w-6xl mx-auto">
-          <div
-            ref={twinRef}
-            style={{
-              opacity: twinOn ? 1 : 0,
-              transform: twinOn ? "translateY(0)" : "translateY(20px)",
-              transition: "opacity 0.7s ease, transform 0.7s ease",
-            }}
-          >
-            <p className="text-[var(--color-text-subtle)] text-xs font-bold tracking-[0.3em] uppercase mb-3">Synthetic Data Training</p>
-            <h2 className="text-5xl font-black uppercase tracking-tight text-[var(--color-text)] mb-4">Digital Twin Risk Models</h2>
-            <p className="text-[var(--color-text-muted)] text-base font-medium mb-16 max-w-3xl">
-              Five XGBoost classifiers trained on <span className="text-[var(--color-accent)] font-bold">8,000 synthetic patient records</span>
-              {" "}with 19 clinical features. 80/20 train-test split for outcome prediction.
+      <section id="twin-metrics" style={{ padding: "96px 40px", background: "var(--color-bg)" }}>
+        <div style={{ maxWidth: 1152, margin: "0 auto" }}>
+          <div ref={twinRef} style={{ opacity: twinOn ? 1 : 0, transform: twinOn ? "translateY(0)" : "translateY(20px)", transition: "opacity 0.7s ease, transform 0.7s ease" }}>
+            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.3em", textTransform: "uppercase", color: "var(--color-text-subtle)", marginBottom: 12 }}>Synthetic Data Training</p>
+            <h2 style={{ fontSize: "clamp(32px,4vw,48px)", fontWeight: 900, textTransform: "uppercase", letterSpacing: "-0.03em", color: "var(--color-text)", marginBottom: 16 }}>Digital Twin Risk Models</h2>
+            <p style={{ color: "var(--color-text-muted)", fontSize: 15, fontWeight: 500, marginBottom: 64, maxWidth: 700 }}>
+              Five XGBoost classifiers trained on <span style={{ color: "var(--color-accent)", fontWeight: 700 }}>8,000 synthetic patient records</span>{" "}
+              with 19 clinical features. 80/20 train-test split for outcome prediction.
             </p>
           </div>
 
           {/* Risk models grid */}
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-px bg-[var(--color-border)]">
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1, background: "var(--color-border)" }}>
             {[
               { name: "30-Day Readmission", auc: 0.727, prevalence: "20.3%", delay: 100 },
               { name: "30-Day Mortality", auc: 0.740, prevalence: "9.9%", delay: 150 },
@@ -984,56 +817,47 @@ export default function LandingPage() {
             ].map((model) => (
               <div
                 key={model.name}
-                className="bg-[var(--color-bg)] p-6 group hover:bg-[var(--color-accent)]/5 transition-all duration-300 relative overflow-hidden"
                 style={{
-                  opacity: twinOn ? 1 : 0,
-                  transform: twinOn ? "translateY(0)" : "translateY(16px)",
+                  background: "var(--color-bg)", padding: 24, position: "relative", overflow: "hidden",
+                  opacity: twinOn ? 1 : 0, transform: twinOn ? "translateY(0)" : "translateY(16px)",
                   transition: `opacity 0.6s ease ${model.delay}ms, transform 0.6s ease ${model.delay}ms`,
+                  cursor: "default",
                 }}
+                onMouseEnter={e => { e.currentTarget.style.background = "var(--color-accent-dim)"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "var(--color-bg)"; }}
               >
-                {/* Hover gradient */}
-                <div className="absolute inset-0 bg-gradient-to-br from-[var(--color-accent)]/0 to-[var(--color-accent)]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-                <div className="relative z-10">
-                  <div className="flex items-start justify-between mb-6">
-                    <h3 className="text-base font-black text-[var(--color-text)] uppercase tracking-tight leading-tight">
-                      {model.name}
-                    </h3>
-                    <BarChart2 className="w-5 h-5 text-[var(--color-accent)]/30 group-hover:text-[var(--color-accent)]/60 transition-colors duration-300" />
+                {/* Corner accent */}
+                <div style={{
+                  position: "absolute", bottom: 0, right: 0,
+                  width: 0, height: 0,
+                  borderStyle: "solid", borderWidth: "0 0 20px 20px",
+                  borderColor: `transparent transparent var(--color-accent-dim) transparent`,
+                }} />
+                <div style={{ position: "relative", zIndex: 1 }}>
+                  <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 24 }}>
+                    <h3 style={{ fontSize: 13, fontWeight: 900, color: "var(--color-text)", textTransform: "uppercase", letterSpacing: "-0.01em", lineHeight: 1.3 }}>{model.name}</h3>
+                    <BarChart2 size={18} style={{ color: "var(--color-accent)", opacity: 0.3, flexShrink: 0 }} />
                   </div>
-
-                  <div className="space-y-3">
-                    {/* AUC */}
+                  <div>
                     <div>
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-[10px] font-bold tracking-[0.15em] uppercase text-[var(--color-text-subtle)]">AUC</span>
-                        <span className="text-2xl font-black text-[var(--color-text)] tabular-nums group-hover:text-[var(--color-accent)] transition-colors duration-300">
-                          {model.auc.toFixed(3)}
-                        </span>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                        <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: "var(--color-text-subtle)" }}>AUC</span>
+                        <span style={{ fontSize: 24, fontWeight: 900, color: "var(--color-text)", fontVariantNumeric: "tabular-nums" }}>{model.auc.toFixed(3)}</span>
                       </div>
-                      <div className="w-full h-1 bg-[var(--color-border)] rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-[var(--color-accent)] transition-all duration-1000 ease-out"
-                          style={{
-                            width: twinOn ? `${model.auc * 100}%` : "0%",
-                            transitionDelay: `${model.delay + 100}ms`,
-                          }}
-                        />
+                      <div style={{ width: "100%", height: 4, background: "var(--color-border)", borderRadius: 2, overflow: "hidden", marginBottom: 12 }}>
+                        <div style={{
+                          height: "100%", background: "var(--color-accent)", borderRadius: 2,
+                          width: twinOn ? `${model.auc * 100}%` : "0%",
+                          transition: `width 1s ease ${model.delay + 100}ms`,
+                        }} />
                       </div>
                     </div>
-
-                    {/* Prevalence */}
-                    <div className="pt-2 border-t border-[var(--color-border)]/50">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-bold tracking-[0.15em] uppercase text-[var(--color-text-subtle)]">Prevalence</span>
-                        <span className="text-sm font-black text-[var(--color-text-muted)] tabular-nums">{model.prevalence}</span>
-                      </div>
+                    <div style={{ paddingTop: 10, borderTop: "1px solid var(--color-border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: "var(--color-text-subtle)" }}>Prevalence</span>
+                      <span style={{ fontSize: 13, fontWeight: 900, color: "var(--color-text-muted)", fontVariantNumeric: "tabular-nums" }}>{model.prevalence}</span>
                     </div>
                   </div>
                 </div>
-
-                {/* Corner accent */}
-                <div className="absolute bottom-0 right-0 w-0 h-0 border-[10px] border-transparent border-b-[var(--color-accent)]/10 border-r-[var(--color-accent)]/10 group-hover:border-b-[var(--color-accent)]/20 group-hover:border-r-[var(--color-accent)]/20 transition-colors duration-300" />
               </div>
             ))}
           </div>
@@ -1043,82 +867,76 @@ export default function LandingPage() {
       {/* ══════════════════════════════════════════
           CTA
       ══════════════════════════════════════════ */}
-      <section
-        ref={ctaRef}
-        className="py-24 px-8 bg-[var(--color-accent)] relative overflow-hidden"
-      >
-        <div
-          className="absolute inset-0 opacity-[0.06] pointer-events-none"
-          style={{
-            backgroundImage:
-              "linear-gradient(var(--color-bg) 1px, transparent 1px), linear-gradient(90deg, var(--color-bg) 1px, transparent 1px)",
-            backgroundSize: "60px 60px",
-          }}
-        />
-        {/* Animated sweep */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background: "linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.04) 50%, transparent 60%)",
-            animation: "sweep 4s ease-in-out infinite",
-          }}
-        />
+      <section ref={ctaRef} style={{ background: isDark ? "linear-gradient(135deg, #08061A 0%, #0E0C28 50%, #08061A 100%)" : "linear-gradient(135deg, #f5f4ff 0%, #ede9fe 50%, #f5f4ff 100%)", padding: "100px 40px", position: "relative", overflow: "hidden" }}>
+        <div style={{
+          position: "absolute", inset: 0, pointerEvents: "none",
+          backgroundImage: "linear-gradient(rgba(129,140,248,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(129,140,248,0.05) 1px, transparent 1px)",
+          backgroundSize: "64px 64px",
+        }} />
+        <div style={{
+          position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)",
+          width: 600, height: 600, borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(129,140,248,0.12) 0%, transparent 70%)",
+          pointerEvents: "none",
+        }} />
 
-        <div
-          className="max-w-6xl mx-auto relative"
-          style={{
-            opacity: ctaOn ? 1 : 0,
-            transform: ctaOn ? "translateY(0)" : "translateY(30px)",
-            transition: "opacity 0.8s ease, transform 0.8s ease",
-          }}
-        >
-          <p className="text-[var(--color-bg)]/40 text-xs font-bold tracking-[0.3em] uppercase mb-4">Ready to Begin</p>
-          <h2 className="text-[clamp(36px,6vw,80px)] font-black uppercase tracking-tight text-[var(--color-bg)] leading-[0.9] mb-10">
+        <div style={{
+          maxWidth: 700, margin: "0 auto", textAlign: "center", position: "relative",
+          opacity: ctaOn ? 1 : 0, transform: ctaOn ? "translateY(0)" : "translateY(24px)",
+          transition: "opacity 0.8s ease, transform 0.8s ease",
+        }}>
+          <p style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.24em", textTransform: "uppercase", color: "var(--color-accent)", marginBottom: 16 }}>
+            Ready to Begin
+          </p>
+          <h2 style={{ fontSize: "clamp(36px,6vw,64px)", fontWeight: 700, letterSpacing: "-0.035em", color: "var(--color-text)", lineHeight: 1.05, marginBottom: 20 }}>
             One System.<br />Eight Specialists.<br />Three Answers.
           </h2>
+          <p style={{ fontSize: 15, color: "var(--color-text-muted)", lineHeight: 1.65, marginBottom: 40, fontWeight: 400 }}>
+            Give every clinician a multi-specialist AI team that works in seconds, not days.
+          </p>
           <button
             onClick={() => navigate("/dashboard")}
-            className="group px-12 py-5 bg-[var(--color-bg)] text-[var(--color-accent)] text-sm font-black tracking-[0.2em] uppercase hover:bg-[var(--color-bg)]/90 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg"
+            style={{
+              padding: "15px 36px", background: "var(--color-accent)", color: "#fff",
+              border: "none", borderRadius: 28, fontSize: 15, fontWeight: 600,
+              display: "inline-flex", alignItems: "center", gap: 10, transition: "all 0.22s ease",
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = "var(--color-accent-hover)"; e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 12px 36px rgba(99,102,241,0.4)"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "var(--color-accent)"; e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}
           >
-            Get Started →
+            Launch Demo <ArrowRight size={18} />
           </button>
         </div>
       </section>
 
-      {/* ── FOOTER ─────────────────────────────── */}
-      <footer className="py-8 px-8 border-t border-[var(--color-border)] flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-6 h-6 bg-[var(--color-accent)] rounded-sm flex items-center justify-center">
-            <span className="text-[var(--color-bg)] text-[9px] font-black">MT</span>
+      {/* ── FOOTER ───────────────────────────────────────────── */}
+      <footer style={{
+        background: "var(--color-surface)", padding: "28px 40px",
+        borderTop: "1px solid var(--color-border)",
+        display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 16,
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ width: 28, height: 28, borderRadius: 7, background: "var(--color-accent)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Activity size={14} strokeWidth={2.2} style={{ color: "#fff" }} />
           </div>
-          <span className="text-[var(--color-text)] text-xs font-bold tracking-[0.2em] uppercase">MediTwin AI</span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: "var(--color-text)" }}>MediTwin AI</span>
         </div>
-        <p className="text-[var(--color-text-subtle)] text-xs tracking-wide">
+        <p style={{ fontSize: 12, color: "var(--color-text-subtle)", fontWeight: 400 }}>
           Agents Assemble · Healthcare AI Endgame Challenge · Tayyab Hussain
         </p>
-        <p className="text-[var(--color-text-subtle)] text-xs">
+        <p style={{ fontSize: 12, color: "var(--color-text-subtle)", fontWeight: 400 }}>
           AI-generated clinical outputs require physician review.
         </p>
       </footer>
 
-      {/* ── GLOBAL KEYFRAMES ────────────────────── */}
       <style>{`
-        @keyframes fadeSlideUp {
-          from { opacity: 0; transform: translateY(28px); }
-          to   { opacity: 1; transform: translateY(0);    }
-        }
-        @keyframes gridShift {
-          0%   { background-position: 0   0;   }
-          100% { background-position: 60px 60px; }
-        }
-        @keyframes pulse {
-          0%, 100% { transform: scale(1);    opacity: 0.04; }
-          50%       { transform: scale(1.15); opacity: 0.06; }
-        }
-        @keyframes sweep {
-          0%   { transform: translateX(-100%); }
-          100% { transform: translateX(200%);  }
-        }
+        @keyframes fadeSlideUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes fadeSlideRight{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:translateX(0)}}
+        @keyframes gridShift{0%{background-position:0 0}100%{background-position:64px 64px}}
+        @keyframes glow-pulse{0%,100%{opacity:0.06}50%{opacity:0.14}}
+        @keyframes float-card{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+        @keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.82)}}
+        @keyframes progress-run{0%{width:0%}50%{width:85%}100%{width:60%}}
       `}</style>
     </div>
   );
