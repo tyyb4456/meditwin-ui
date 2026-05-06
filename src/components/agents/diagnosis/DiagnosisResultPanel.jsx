@@ -1,7 +1,7 @@
 import {
     CheckCircle2, AlertCircle, Loader2, X, AlertTriangle,
     Activity, Pill, Clock, TrendingUp, ChevronDown,
-    Copy, Check, Zap, Brain, BarChart2,
+    Copy, Check, Zap, Brain, BarChart2, FileWarning, BookOpen, Database,
 } from "lucide-react";
 
 const ACCENT  = "var(--color-accent)";
@@ -287,12 +287,83 @@ export default function DiagnosisResultPanel({
                                             </div>
                                             <p style={{ fontSize: 12, fontWeight: 700, color: TEXT, margin: 0 }}>{step.description}</p>
                                             {step.drug_name && <p style={{ fontSize: 11, color: MUTED, margin: "3px 0 0" }}>{step.drug_name} {step.drug_dose} {step.drug_route && `(${step.drug_route})`}</p>}
+                                            {step.rationale && <p style={{ fontSize: 11, color: SUBTLE, margin: "5px 0 0", lineHeight: 1.5, fontStyle: "italic" }}>{step.rationale}</p>}
                                         </div>
                                     </div>
                                 ))}
                             </div>
                         </div>
                     )}
+
+                    {/* Reasoning summary */}
+                    {finalResult && displayResult.reasoning_summary && (
+                        <div style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 12, padding: "14px 16px" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                                <BookOpen size={13} color={CYAN} />
+                                <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: MUTED, margin: 0 }}>Reasoning Summary</p>
+                            </div>
+                            <p style={{ fontSize: 12, color: TEXT, margin: 0, lineHeight: 1.8 }}>{displayResult.reasoning_summary}</p>
+                        </div>
+                    )}
+
+                    {/* FHIR Conditions */}
+                    {finalResult && displayResult.fhir_conditions?.length > 0 && (
+                        <div style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 12, overflow: "hidden" }}>
+                            <div style={{ padding: "12px 16px", borderBottom: `1px solid ${BORDER}`, display: "flex", alignItems: "center", gap: 8, background: `color-mix(in srgb, #8B5CF6 6%, var(--color-surface))` }}>
+                                <FileWarning size={13} color={PURPLE} />
+                                <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase", color: TEXT }}>
+                                    FHIR Conditions ({displayResult.fhir_conditions.length})
+                                </span>
+                                <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 7px", background: `${PURPLE}18`, color: PURPLE, border: `1px solid ${PURPLE}30`, borderRadius: 4, marginLeft: "auto" }}>Condition</span>
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 1, background: BORDER }}>
+                                {displayResult.fhir_conditions.map((cond, idx) => {
+                                    const coding = cond.code?.coding?.[0];
+                                    const status = cond.verificationStatus?.coding?.[0]?.display || "—";
+                                    const statusColor = status === "Differential" ? CYAN : status === "Refuted" ? RED : GREEN;
+                                    return (
+                                        <div key={idx} style={{ background: SURFACE, padding: "12px 16px", display: "flex", flexDirection: "column", gap: 6 }}>
+                                            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
+                                                <div style={{ flex: 1 }}>
+                                                    <p style={{ fontSize: 13, fontWeight: 700, color: TEXT, margin: "0 0 3px" }}>{coding?.display || "—"}</p>
+                                                    <p style={{ fontSize: 10, color: SUBTLE, margin: 0, fontFamily: "monospace" }}>{coding?.code} · {coding?.system?.split("/").pop()}</p>
+                                                </div>
+                                                <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 8px", borderRadius: 4, background: `${statusColor}18`, color: statusColor, border: `1px solid ${statusColor}40`, flexShrink: 0 }}>{status}</span>
+                                            </div>
+                                            {cond.note?.[0]?.text && (
+                                                <p style={{ fontSize: 11, color: MUTED, margin: 0, lineHeight: 1.6, fontStyle: "italic", borderTop: `1px solid ${BORDER}`, paddingTop: 8 }}>
+                                                    {cond.note[0].text}
+                                                </p>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Metadata footer */}
+                    {finalResult && (displayResult.request_id || displayResult.rag_mode !== undefined || displayResult.cache_hit !== undefined) && (
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 4px", flexWrap: "wrap" }}>
+                            {displayResult.rag_mode && (
+                                <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10, color: SUBTLE, fontFamily: "monospace" }}>
+                                    <Database size={10} color={SUBTLE} />
+                                    mode: <span style={{ color: MUTED }}>{displayResult.rag_mode}</span>
+                                </span>
+                            )}
+                            {displayResult.cache_hit !== undefined && (
+                                <span style={{ fontSize: 10, color: SUBTLE, fontFamily: "monospace" }}>
+                                    cache: <span style={{ color: displayResult.cache_hit ? "#22C55E" : MUTED }}>{displayResult.cache_hit ? "HIT" : "MISS"}</span>
+                                </span>
+                            )}
+                            {displayResult.request_id && (
+                                <span style={{ fontSize: 10, color: SUBTLE, fontFamily: "monospace" }}>
+                                    req: <span style={{ color: MUTED }}>{displayResult.request_id}</span>
+                                </span>
+                            )}
+                        </div>
+                    )}
+
                 </div>
             )}
 

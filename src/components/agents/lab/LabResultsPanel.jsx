@@ -1,6 +1,7 @@
 import {
     FlaskConical, AlertCircle, Loader2, ChevronDown,
     Activity, CheckCircle2, Copy, Check, X, Brain,
+    ShieldAlert, Zap, Clock, ListChecks, TestTube2, Database, Stethoscope,
 } from "lucide-react";
 
 const ACCENT  = "var(--color-accent)";
@@ -206,6 +207,11 @@ export default function LabResultsPanel({
                                     {displayResult.severity_score.contributors.join(" · ")}
                                 </p>
                             )}
+                            {displayResult.severity_score.organ_systems_affected !== undefined && (
+                                <p style={{ fontSize: 11, color: SUBTLE, margin: "5px 0 0", fontFamily: "monospace" }}>
+                                    Organ systems affected: <span style={{ color: AMBER, fontWeight: 700 }}>{displayResult.severity_score.organ_systems_affected}</span>
+                                </p>
+                            )}
                         </div>
                     )}
 
@@ -327,19 +333,24 @@ export default function LabResultsPanel({
                             <div style={{ display: "flex", flexDirection: "column" }}>
                                 {displayResult.pattern_analysis.identified_patterns.map((pat, idx) => (
                                     <div key={idx} style={{ padding: "12px 16px", borderBottom: `1px solid ${BORDER}` }}>
-                                        <div
-                                            style={{ cursor: "pointer", display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}
+                                        <div style={{ cursor: "pointer", display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}
                                             onClick={() => setExpandedPattern(expandedPattern === idx ? null : idx)}
                                         >
                                             <div style={{ flex: 1 }}>
                                                 <p style={{ fontSize: 12, fontWeight: 800, color: TEXT, margin: "0 0 3px" }}>{pat.pattern}</p>
                                                 <p style={{ fontSize: 11, color: MUTED, margin: 0 }}>{pat.description}</p>
                                             </div>
-                                            <ChevronDown size={14} color={SUBTLE} style={{
-                                                flexShrink: 0, marginLeft: 10,
-                                                transform: expandedPattern === idx ? "rotate(180deg)" : "rotate(0deg)",
-                                                transition: "transform 0.2s",
-                                            }} />
+                                            <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0, marginLeft: 10 }}>
+                                                {pat.rules_met !== undefined && (
+                                                    <span style={{ fontSize: 10, fontFamily: "monospace", fontWeight: 700, color: pat.rules_met === pat.rules_total ? GREEN : AMBER }}>
+                                                        {pat.rules_met}/{pat.rules_total} rules
+                                                    </span>
+                                                )}
+                                                <ChevronDown size={14} color={SUBTLE} style={{
+                                                    transform: expandedPattern === idx ? "rotate(180deg)" : "rotate(0deg)",
+                                                    transition: "transform 0.2s",
+                                                }} />
+                                            </div>
                                         </div>
                                         {expandedPattern === idx && (
                                             <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${BORDER}`, display: "flex", flexDirection: "column", gap: 8, animation: "fadeIn 0.2s ease" }}>
@@ -372,6 +383,144 @@ export default function LabResultsPanel({
                                     </div>
                                 ))}
                             </div>
+                        </div>
+                    )}
+
+                    {/* Critical alerts */}
+                    {isFinal && displayResult.critical_alerts?.length > 0 && (
+                        <div style={{ background: `${RED}08`, border: `1px solid ${RED}50`, borderRadius: 12, overflow: "hidden" }}>
+                            <div style={{ padding: "12px 16px", borderBottom: `1px solid ${RED}30`, display: "flex", alignItems: "center", gap: 8, background: `${RED}10` }}>
+                                <ShieldAlert size={13} color={RED} />
+                                <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase", color: RED }}>
+                                    Critical Alerts ({displayResult.critical_alerts.length})
+                                </span>
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 1, background: `${RED}20` }}>
+                                {displayResult.critical_alerts.map((alert, idx) => (
+                                    <div key={idx} style={{ background: SURFACE, padding: "12px 16px", display: "flex", alignItems: "flex-start", gap: 12 }}>
+                                        <div style={{ width: 28, height: 28, background: `${RED}18`, borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
+                                            <ShieldAlert size={13} color={RED} />
+                                        </div>
+                                        <div style={{ flex: 1 }}>
+                                            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4, flexWrap: "wrap" }}>
+                                                <span style={{ fontSize: 9, fontWeight: 800, padding: "2px 7px", background: `${RED}18`, color: RED, border: `1px solid ${RED}40`, borderRadius: 4, letterSpacing: "0.1em", textTransform: "uppercase" }}>{alert.level}</span>
+                                                <span style={{ fontSize: 10, color: SUBTLE, fontFamily: "monospace" }}>{alert.display} · {alert.value} {alert.unit}</span>
+                                            </div>
+                                            <p style={{ fontSize: 12, fontWeight: 700, color: TEXT, margin: 0 }}>{alert.message}</p>
+                                            {alert.action_required && (
+                                                <p style={{ fontSize: 10, color: RED, margin: "4px 0 0", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" }}>⚠ Action Required</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Clinical decision support */}
+                    {isFinal && displayResult.clinical_decision_support && (() => {
+                        const cds = displayResult.clinical_decision_support;
+                        const allActions = [
+                            ...(cds.immediate_actions || []),
+                            ...(cds.urgent_actions || []),
+                            ...(cds.routine_actions || []),
+                        ];
+                        const priorityColor = (p) => {
+                            const u = (p || "").toUpperCase();
+                            if (u === "STAT")    return RED;
+                            if (u === "URGENT")  return ORANGE;
+                            return GREEN;
+                        };
+                        return (
+                            <div style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 12, overflow: "hidden" }}>
+                                <div style={{ padding: "12px 16px", borderBottom: `1px solid ${BORDER}`, display: "flex", alignItems: "center", gap: 8, background: `color-mix(in srgb, ${CYAN} 6%, var(--color-surface))` }}>
+                                    <Stethoscope size={13} color={CYAN} />
+                                    <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase", color: TEXT }}>
+                                        Clinical Decision Support
+                                    </span>
+                                </div>
+                                <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: 16 }}>
+
+                                    {/* Actions */}
+                                    {allActions.length > 0 && (
+                                        <div>
+                                            <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: MUTED, margin: "0 0 10px" }}>Actions ({allActions.length})</p>
+                                            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                                {allActions.map((a, i) => {
+                                                    const pc = priorityColor(a.priority);
+                                                    return (
+                                                        <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "10px 12px", background: `${pc}08`, border: `1px solid ${pc}30`, borderLeft: `3px solid ${pc}`, borderRadius: 8 }}>
+                                                            <span style={{ fontSize: 9, fontWeight: 800, padding: "2px 7px", background: `${pc}18`, color: pc, border: `1px solid ${pc}40`, borderRadius: 4, letterSpacing: "0.1em", textTransform: "uppercase", flexShrink: 0, marginTop: 1 }}>{a.priority}</span>
+                                                            <p style={{ fontSize: 12, color: TEXT, margin: 0, lineHeight: 1.6 }}>{a.action}</p>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Follow-up labs */}
+                                    {cds.follow_up_labs?.length > 0 && (
+                                        <div>
+                                            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+                                                <TestTube2 size={12} color={CYAN} />
+                                                <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: MUTED, margin: 0 }}>Follow-up Labs</p>
+                                            </div>
+                                            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                                                {cds.follow_up_labs.map((lab, i) => (
+                                                    <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "10px 12px", background: BG, border: `1px solid ${BORDER}`, borderRadius: 8 }}>
+                                                        <div style={{ flex: 1 }}>
+                                                            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
+                                                                <p style={{ fontSize: 12, fontWeight: 700, color: TEXT, margin: 0 }}>{lab.test}</p>
+                                                                {lab.loinc && <span style={{ fontSize: 10, color: SUBTLE, fontFamily: "monospace" }}>LOINC: {lab.loinc}</span>}
+                                                                {lab.timing && <span style={{ fontSize: 9, fontWeight: 700, padding: "1px 6px", background: `${AMBER}18`, color: AMBER, border: `1px solid ${AMBER}40`, borderRadius: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>{lab.timing}</span>}
+                                                            </div>
+                                                            {lab.rationale && <p style={{ fontSize: 11, color: MUTED, margin: 0, fontStyle: "italic" }}>{lab.rationale}</p>}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Monitoring plan */}
+                                    {cds.monitoring_plan?.length > 0 && (
+                                        <div>
+                                            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                                                <ListChecks size={12} color={GREEN} />
+                                                <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: MUTED, margin: 0 }}>Monitoring Plan</p>
+                                            </div>
+                                            {cds.monitoring_plan.map((item, i) => (
+                                                <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 7, fontSize: 12, color: TEXT, marginBottom: 4 }}>
+                                                    <div style={{ width: 5, height: 5, background: GREEN, borderRadius: "50%", flexShrink: 0, marginTop: 5 }} />
+                                                    {item}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    })()}
+
+                    {/* Metadata footer */}
+                    {isFinal && (
+                        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "6px 4px", flexWrap: "wrap" }}>
+                            {displayResult.llm_interpretation_available !== undefined && (
+                                <span style={{ fontSize: 10, color: SUBTLE, fontFamily: "monospace" }}>
+                                    llm: <span style={{ color: displayResult.llm_interpretation_available ? GREEN : MUTED }}>{displayResult.llm_interpretation_available ? "AVAILABLE" : "N/A"}</span>
+                                </span>
+                            )}
+                            {displayResult.cache_hit !== undefined && (
+                                <span style={{ fontSize: 10, color: SUBTLE, fontFamily: "monospace" }}>
+                                    cache: <span style={{ color: displayResult.cache_hit ? GREEN : MUTED }}>{displayResult.cache_hit ? "HIT" : "MISS"}</span>
+                                </span>
+                            )}
+                            {displayResult.request_id && (
+                                <span style={{ fontSize: 10, color: SUBTLE, fontFamily: "monospace" }}>
+                                    req: <span style={{ color: MUTED }}>{displayResult.request_id}</span>
+                                </span>
+                            )}
                         </div>
                     )}
                 </div>

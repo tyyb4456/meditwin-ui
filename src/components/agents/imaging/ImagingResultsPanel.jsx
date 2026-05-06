@@ -1,6 +1,7 @@
 import {
     Eye, AlertCircle, Loader2,
     Copy, Check, X, ScanLine, Stethoscope, Target, FileWarning, CheckCircle2,
+    Brain, AlertTriangle, GitBranch, Zap, Clock, ShieldAlert, XCircle,
 } from "lucide-react";
 
 const BG      = "var(--color-bg)";
@@ -203,6 +204,11 @@ export default function ImagingResultsPanel({
                                     <p style={{ fontSize: 10, color: gradeColor(grade), fontWeight: 700, margin: "4px 0 0", textTransform: "uppercase", letterSpacing: "0.1em" }}>
                                         Grade: {grade || "…"}
                                     </p>
+                                    {displayResult.severity_assessment?.clinical_urgency && (
+                                        <p style={{ fontSize: 10, color: MUTED, margin: "6px 0 0", lineHeight: 1.5 }}>
+                                            {displayResult.severity_assessment.clinical_urgency}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                         );
@@ -245,13 +251,33 @@ export default function ImagingResultsPanel({
                                     { label: "Distribution",  value: displayResult.imaging_findings.distribution },
                                 ].filter(f => f.value).map(f => (
                                     <div key={f.label} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                                        <span style={{ fontSize: 10, fontWeight: 700, color: SUBTLE, letterSpacing: "0.1em", textTransform: "uppercase", minWidth: 100, flexShrink: 0 }}>{f.label}</span>
+                                        <span style={{ fontSize: 10, fontWeight: 700, color: SUBTLE, letterSpacing: "0.1em", textTransform: "uppercase", minWidth: 120, flexShrink: 0 }}>{f.label}</span>
                                         <span style={{ fontSize: 12, color: TEXT }}>{f.value}</span>
                                     </div>
                                 ))}
+                                {displayResult.imaging_findings.bilateral !== undefined && (
+                                    <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                                        <span style={{ fontSize: 10, fontWeight: 700, color: SUBTLE, letterSpacing: "0.1em", textTransform: "uppercase", minWidth: 120, flexShrink: 0 }}>Bilateral</span>
+                                        <span style={{
+                                            fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 4,
+                                            background: displayResult.imaging_findings.bilateral ? `${ORANGE}18` : `${GREEN}18`,
+                                            color: displayResult.imaging_findings.bilateral ? ORANGE : GREEN,
+                                            border: `1px solid ${displayResult.imaging_findings.bilateral ? ORANGE : GREEN}40`,
+                                        }}>{displayResult.imaging_findings.bilateral ? "YES" : "NO"}</span>
+                                    </div>
+                                )}
+                                {displayResult.imaging_findings.confidence_in_findings && (
+                                    <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                                        <span style={{ fontSize: 10, fontWeight: 700, color: SUBTLE, letterSpacing: "0.1em", textTransform: "uppercase", minWidth: 120, flexShrink: 0 }}>Confidence</span>
+                                        <span style={{
+                                            fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 4,
+                                            background: `${EMERALD}18`, color: EMERALD, border: `1px solid ${EMERALD}40`,
+                                        }}>{displayResult.imaging_findings.confidence_in_findings}</span>
+                                    </div>
+                                )}
                                 {displayResult.imaging_findings.key_features?.length > 0 && (
                                     <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                                        <span style={{ fontSize: 10, fontWeight: 700, color: SUBTLE, letterSpacing: "0.1em", textTransform: "uppercase", minWidth: 100, flexShrink: 0 }}>Key Features</span>
+                                        <span style={{ fontSize: 10, fontWeight: 700, color: SUBTLE, letterSpacing: "0.1em", textTransform: "uppercase", minWidth: 120, flexShrink: 0 }}>Key Features</span>
                                         <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
                                             {displayResult.imaging_findings.key_features.map(f => (
                                                 <span key={f} style={{ fontSize: 10, padding: "2px 8px", background: `${EMERALD}12`, color: EMERALD, border: `1px solid ${EMERALD}30`, borderRadius: 4 }}>{f}</span>
@@ -263,14 +289,16 @@ export default function ImagingResultsPanel({
                         </div>
                     )}
 
-                    {/* Clinical impression */}
-                    {isFinal && displayResult.clinical_impression && (
+                    {/* Clinical interpretation */}
+                    {isFinal && (displayResult.clinical_interpretation || displayResult.clinical_impression) && (
                         <div style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 12, padding: "14px 16px" }}>
                             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
                                 <Stethoscope size={13} color={CYAN} />
-                                <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: MUTED, margin: 0 }}>Clinical Impression</p>
+                                <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: MUTED, margin: 0 }}>Clinical Interpretation</p>
                             </div>
-                            <p style={{ fontSize: 12, color: TEXT, margin: 0, lineHeight: 1.8, fontStyle: "italic" }}>{displayResult.clinical_impression}</p>
+                            <p style={{ fontSize: 12, color: TEXT, margin: 0, lineHeight: 1.8, fontStyle: "italic" }}>
+                                {displayResult.clinical_interpretation || displayResult.clinical_impression}
+                            </p>
                         </div>
                     )}
 
@@ -284,37 +312,139 @@ export default function ImagingResultsPanel({
                                 </span>
                             </div>
                             <div style={{ display: "flex", flexDirection: "column" }}>
-                                {displayResult.recommended_actions.map((action, idx) => {
-                                    const aColor     = priorityColor(action.priority);
-                                    const isExpanded = expandedAction === idx;
-                                    return (
-                                        <div key={idx} style={{ borderBottom: `1px solid ${BORDER}` }}>
-                                            <div
-                                                style={{ padding: "12px 16px", cursor: "pointer", display: "flex", alignItems: "flex-start", gap: 12 }}
-                                                onClick={() => setExpandedAction(isExpanded ? null : idx)}
-                                            >
-                                                <div style={{ width: 28, height: 28, background: `${aColor}18`, borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                                                    <Target size={13} color={aColor} />
-                                                </div>
-                                                <div style={{ flex: 1 }}>
-                                                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4, flexWrap: "wrap" }}>
-                                                        <span style={{
-                                                            fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase",
-                                                            padding: "2px 7px", background: `${aColor}18`, color: aColor, borderRadius: 4,
-                                                        }}>{action.priority}</span>
-                                                    </div>
-                                                    <p style={{ fontSize: 12, fontWeight: 700, color: TEXT, margin: 0 }}>{action.action}</p>
-                                                    <p style={{ fontSize: 11, color: MUTED, margin: "3px 0 0" }}>{action.rationale}</p>
-                                                </div>
-                                            </div>
-                                            {isExpanded && action.details && (
-                                                <div style={{ padding: "0 16px 12px 56px", animation: "fadeIn 0.2s ease" }}>
-                                                    <p style={{ fontSize: 11, color: MUTED, margin: 0, lineHeight: 1.6, fontStyle: "italic" }}>{action.details}</p>
-                                                </div>
-                                            )}
+                                {displayResult.recommended_actions.map((action, idx) => (
+                                    <div key={idx} style={{ borderBottom: `1px solid ${BORDER}`, padding: "12px 16px", display: "flex", alignItems: "flex-start", gap: 12 }}>
+                                        <div style={{ width: 28, height: 28, background: `${EMERALD}18`, borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
+                                            <Target size={13} color={EMERALD} />
                                         </div>
-                                    );
-                                })}
+                                        <p style={{ fontSize: 12, fontWeight: 600, color: TEXT, margin: 0, lineHeight: 1.6 }}>
+                                            {typeof action === "string" ? action : action.action || JSON.stringify(action)}
+                                        </p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Confirms diagnosis */}
+                    {isFinal && displayResult.confirms_diagnosis !== undefined && (
+                        <div style={{
+                            background: SURFACE, border: `1px solid ${displayResult.confirms_diagnosis ? GREEN : ORANGE}40`,
+                            borderLeft: `4px solid ${displayResult.confirms_diagnosis ? GREEN : ORANGE}`,
+                            borderRadius: 10, padding: "12px 16px",
+                            display: "flex", alignItems: "center", gap: 10,
+                        }}>
+                            {displayResult.confirms_diagnosis
+                                ? <CheckCircle2 size={15} color={GREEN} />
+                                : <XCircle size={15} color={ORANGE} />}
+                            <div>
+                                <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: MUTED, margin: "0 0 2px" }}>Diagnosis Confirmation</p>
+                                <p style={{ fontSize: 12, fontWeight: 700, color: displayResult.confirms_diagnosis ? GREEN : ORANGE, margin: 0 }}>
+                                    {displayResult.confirms_diagnosis
+                                        ? "Imaging confirms working diagnosis"
+                                        : "Imaging does not confirm working diagnosis"}
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* LLM Interpretation */}
+                    {isFinal && displayResult.llm_interpretation && (
+                        <div style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 12, overflow: "hidden" }}>
+                            <div style={{ padding: "12px 16px", borderBottom: `1px solid ${BORDER}`, display: "flex", alignItems: "center", gap: 8, background: `color-mix(in srgb, ${CYAN} 6%, var(--color-surface))` }}>
+                                <Brain size={13} color={CYAN} />
+                                <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase", color: TEXT }}>LLM Clinical Interpretation</span>
+                            </div>
+                            <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: 14 }}>
+
+                                {/* Clinical opinion */}
+                                {displayResult.llm_interpretation.clinical_opinion && (
+                                    <div>
+                                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                                            <Stethoscope size={11} color={CYAN} />
+                                            <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: CYAN }}>Clinical Opinion</span>
+                                        </div>
+                                        <p style={{ fontSize: 12, color: TEXT, margin: 0, lineHeight: 1.7 }}>{displayResult.llm_interpretation.clinical_opinion}</p>
+                                    </div>
+                                )}
+
+                                {/* Key concern */}
+                                {displayResult.llm_interpretation.key_concern && (
+                                    <div style={{ background: `${ORANGE}0E`, border: `1px solid ${ORANGE}30`, borderRadius: 8, padding: "10px 12px", display: "flex", gap: 10, alignItems: "flex-start" }}>
+                                        <AlertTriangle size={13} color={ORANGE} style={{ flexShrink: 0, marginTop: 1 }} />
+                                        <div>
+                                            <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: ORANGE, margin: "0 0 4px" }}>Key Concern</p>
+                                            <p style={{ fontSize: 12, color: TEXT, margin: 0, lineHeight: 1.6 }}>{displayResult.llm_interpretation.key_concern}</p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Differential */}
+                                {displayResult.llm_interpretation.differential?.length > 0 && (
+                                    <div>
+                                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                                            <GitBranch size={11} color={PURPLE} />
+                                            <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: PURPLE }}>Differential Diagnosis</span>
+                                        </div>
+                                        <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                                            {displayResult.llm_interpretation.differential.map((d, i) => (
+                                                <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+                                                    <span style={{ fontSize: 9, fontWeight: 800, color: PURPLE, fontFamily: "monospace", minWidth: 18, marginTop: 2 }}>#{i + 1}</span>
+                                                    <span style={{ fontSize: 12, color: TEXT, lineHeight: 1.5 }}>{d}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Immediate actions */}
+                                {displayResult.llm_interpretation.immediate_actions?.length > 0 && (
+                                    <div>
+                                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                                            <Zap size={11} color={YELLOW} />
+                                            <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: YELLOW }}>Immediate Actions</span>
+                                        </div>
+                                        <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                                            {displayResult.llm_interpretation.immediate_actions.map((a, i) => (
+                                                <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+                                                    <div style={{ width: 16, height: 16, borderRadius: "50%", background: `${YELLOW}20`, border: `1px solid ${YELLOW}50`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
+                                                        <span style={{ fontSize: 8, fontWeight: 800, color: YELLOW }}>{i + 1}</span>
+                                                    </div>
+                                                    <span style={{ fontSize: 12, color: TEXT, lineHeight: 1.5 }}>{a}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Follow up */}
+                                {displayResult.llm_interpretation.follow_up && (
+                                    <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                                        <Clock size={13} color={EMERALD} style={{ flexShrink: 0, marginTop: 1 }} />
+                                        <div>
+                                            <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: EMERALD, margin: "0 0 4px" }}>Follow Up</p>
+                                            <p style={{ fontSize: 12, color: TEXT, margin: 0, lineHeight: 1.6 }}>{displayResult.llm_interpretation.follow_up}</p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Safety net */}
+                                {displayResult.llm_interpretation.safety_net && (
+                                    <div style={{ background: `${RED}0E`, border: `1px solid ${RED}30`, borderRadius: 8, padding: "10px 12px", display: "flex", gap: 10, alignItems: "flex-start" }}>
+                                        <ShieldAlert size={13} color={RED} style={{ flexShrink: 0, marginTop: 1 }} />
+                                        <div>
+                                            <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: RED, margin: "0 0 4px" }}>Safety Net</p>
+                                            <p style={{ fontSize: 12, color: TEXT, margin: 0, lineHeight: 1.6 }}>{displayResult.llm_interpretation.safety_net}</p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* LLM disclaimer */}
+                                {displayResult.llm_interpretation.llm_disclaimer && (
+                                    <p style={{ fontSize: 10, color: SUBTLE, margin: 0, fontStyle: "italic", opacity: 0.7 }}>
+                                        {displayResult.llm_interpretation.llm_disclaimer}
+                                    </p>
+                                )}
                             </div>
                         </div>
                     )}
