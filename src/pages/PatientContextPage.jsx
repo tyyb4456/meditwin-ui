@@ -9,6 +9,7 @@
  *   4. <PatientHistory />
  */
 import { useState, useRef, useCallback } from "react";
+import { API } from "../config/api";
 import { useNavigate } from "react-router-dom";
 import {
     ArrowLeft, Wifi, CheckCircle2, Loader2, XCircle, ChevronRight,
@@ -90,7 +91,7 @@ export default function PatientContextPage() {
         abortRef.current = new AbortController();
 
         try {
-            const res = await fetch("http://127.0.0.1:8001/stream", {
+            const res = await fetch(`${API.PATIENT_CONTEXT}/stream`, {
                 method:  "POST",
                 headers: { "Content-Type": "application/json" },
                 body:    JSON.stringify({ patient_id: patientId.trim(), fhir_base_url: fhirUrl }),

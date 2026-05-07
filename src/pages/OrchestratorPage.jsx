@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { API } from "../config/api";
 import { useNavigate } from "react-router-dom";
 import {
     Activity, ShieldAlert, HeartPulse, BrainCircuit,
@@ -808,7 +809,7 @@ export default function OrchestratorPage() {
         setActiveTab("structured");
         abortControllerRef.current = new AbortController();
         try {
-            const response = await fetch("http://127.0.0.1:8000/analyze/stream", {
+            const response = await fetch(`${API.ORCHESTRATOR}/analyze/stream`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),

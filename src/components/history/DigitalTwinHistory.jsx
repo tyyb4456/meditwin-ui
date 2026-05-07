@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { API } from "../../config/api";
 import {
     Clock, Search, Trash2, Database, AlertTriangle, ChevronDown, ChevronRight,
     Loader2, Activity, GitBranch, Target, TrendingUp, DollarSign, BarChart2
@@ -207,7 +208,7 @@ export default function DigitalTwinHistory({ defaultPatientId = "" }) {
         if (!patientId.trim()) { setError("Patient ID / Request ID is required"); return; }
         setLoading(true); setError(null); setData(null);
 
-        const url    = `http://127.0.0.1:8006${endpoint.replace("{patient_id}", patientId).replace("{id}", patientId)}`;
+        const url    = `${API.DIGITAL_TWIN}${endpoint.replace("{patient_id}", patientId).replace("{id}", patientId)}`;
         const method = activeTab === "delete" ? "DELETE" : "GET";
         const headers = method === "DELETE" ? { "X-Internal-Token": "meditwin-internal" } : {};
 

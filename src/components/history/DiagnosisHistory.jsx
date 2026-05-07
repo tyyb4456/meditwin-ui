@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { API } from "../../config/api";
 import {
     Clock, Search, Trash2, AlertTriangle,
     ChevronDown, ChevronRight,
@@ -353,7 +354,7 @@ function renderResult(activeTab, result) {
 // ── Main export ───────────────────────────────────────────────────────────────
 
 export default function DiagnosisHistory({ defaultPatientId = "" }) {
-    const BASE = "http://127.0.0.1:8002";
+    const BASE = API.DIAGNOSIS;
 
     const [activeTab,      setActiveTab]      = useState("list");
     const [patientId,      setPatientId]      = useState(defaultPatientId);

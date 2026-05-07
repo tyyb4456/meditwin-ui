@@ -9,6 +9,7 @@
  *   4. <LabHistory>
  */
 import { useState, useRef, useEffect, useCallback } from "react";
+import { API } from "../config/api";
 import { useNavigate } from "react-router-dom";
 import { FlaskConical, ArrowLeft, ChevronRight, Wifi, Loader2 } from "lucide-react";
 import ThemeToggle from "../components/theme/ThemeToggle";
@@ -137,7 +138,7 @@ export default function LabAnalysisAgent() {
             const body = { patient_state: patientState };
             if (diagnosisOutput) body.diagnosis_agent_output = diagnosisOutput;
 
-            const response = await fetch("http://127.0.0.1:8003/stream", {
+            const response = await fetch(`${API.LAB_ANALYSIS}/stream`, {
                 method:  "POST",
                 headers: { "Content-Type": "application/json" },
                 body:    JSON.stringify(body),

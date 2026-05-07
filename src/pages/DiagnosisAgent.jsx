@@ -9,6 +9,7 @@
  *   4. <DiagnosisHistory>
  */
 import { useState, useRef, useEffect, useCallback } from "react";
+import { API } from "../config/api";
 import { useNavigate } from "react-router-dom";
 import {
     ArrowLeft, Wifi, Loader2, ChevronRight, Brain,
@@ -133,7 +134,7 @@ export default function DiagnosisAgent() {
         abortControllerRef.current = new AbortController();
 
         try {
-            const response = await fetch("http://127.0.0.1:8002/stream", {
+            const response = await fetch(`${API.DIAGNOSIS}/stream`, {
                 method:  "POST",
                 headers: { "Content-Type": "application/json" },
                 body:    JSON.stringify({ patient_state: patientState, chief_complaint: chiefComplaint, include_fhir_resources: true }),

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { API } from "../../config/api";
 import {
     Clock, Search, Trash2, AlertTriangle, Database,
     ChevronDown, ChevronRight, Loader2, CheckCircle2, XCircle,
@@ -187,7 +188,7 @@ export default function ImagingTriageHistory({ defaultPatientId = "" }) {
         if (!patientId.trim()) { setError("Patient ID / Request ID is required"); return; }
         setLoading(true); setError(null); setData(null);
 
-        const url    = `http://127.0.0.1:8005${endpoint.replace("{patient_id}", patientId).replace("{id}", patientId)}`;
+        const url    = `${API.IMAGING_TRIAGE}${endpoint.replace("{patient_id}", patientId).replace("{id}", patientId)}`;
         const method = activeTab === "delete" ? "DELETE" : "GET";
         const headers = method === "DELETE" ? { "X-Internal-Token": "meditwin-internal" } : {};
 

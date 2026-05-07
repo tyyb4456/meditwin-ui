@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { API } from "../../config/api";
 import {
     Clock, Search, Trash2, AlertTriangle,
     ChevronDown, ChevronRight, Loader2, CheckCircle2, XCircle,
@@ -358,7 +359,7 @@ function renderResult(activeTab, result) {
 // ── Main export ───────────────────────────────────────────────────────────────
 
 export default function LabHistory({ defaultPatientId = "" }) {
-    const BASE = "http://127.0.0.1:8003";
+    const BASE = API.LAB_ANALYSIS;
 
     const [activeTab,     setActiveTab]     = useState("list");
     const [patientId,     setPatientId]     = useState(defaultPatientId);

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { API } from "../../config/api";
 import {
     Search, Trash2, Database, AlertTriangle, ChevronDown, ChevronRight,
     Loader2, FileText, BookOpen, ShieldAlert, CheckCircle2, AlertCircle,
@@ -255,7 +256,7 @@ export default function ExplanationHistory({ defaultPatientId = "" }) {
         if (!patientId.trim()) { setError("ID is required"); return; }
         setLoading(true); setError(null); setData(null);
 
-        const url = `http://127.0.0.1:8009${endpoint.replace("{patient_id}", patientId).replace("{id}", patientId)}`;
+        const url = `${API.EXPLANATION}${endpoint.replace("{patient_id}", patientId).replace("{id}", patientId)}`;
         const method = activeTab === "delete" ? "DELETE" : "GET";
         const headers = method === "DELETE" ? { "X-Internal-Token": "meditwin-internal" } : {};
 

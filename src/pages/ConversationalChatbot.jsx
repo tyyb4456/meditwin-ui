@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { API } from "../config/api";
 import { useNavigate } from "react-router-dom";
 import {
     ArrowLeft, ChevronRight, Send, X, Loader2, Wrench,
@@ -195,7 +196,7 @@ export default function ConversationalChatbot() {
         abortRef.current = new AbortController();
 
         try {
-            const res = await fetch("http://127.0.0.1:8010/query/stream", {
+            const res = await fetch(`${API.CONVERSATIVE}/query/stream`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ query: q, session_id: sessionId }),

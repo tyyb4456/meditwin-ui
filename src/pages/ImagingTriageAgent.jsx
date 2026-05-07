@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { API } from "../config/api";
 import { useNavigate } from "react-router-dom";
 import { Eye, ArrowLeft, ChevronRight, Wifi, Loader2 } from "lucide-react";
 import ThemeToggle from "../components/theme/ThemeToggle";
@@ -113,7 +114,7 @@ export default function ImagingTriageAgent() {
         abortControllerRef.current = new AbortController();
 
         try {
-            const response = await fetch("http://127.0.0.1:8005/stream", {
+            const response = await fetch(`${API.IMAGING_TRIAGE}/stream`, {
                 method:  "POST",
                 headers: { "Content-Type": "application/json" },
                 body:    JSON.stringify(payload),

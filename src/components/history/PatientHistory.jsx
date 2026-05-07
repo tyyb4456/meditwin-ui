@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { API } from "../../config/api";
 import {
     Clock, Search, Trash2, FileSearch, BarChart3,
     ChevronDown, ChevronRight, Loader2, CheckCircle2,
@@ -458,7 +459,7 @@ function StatsPanel({ stats }) {
 
 // ── Main PatientHistory component ───────────────────────────────────────────
 export default function PatientHistory({ defaultPatientId = "" }) {
-    const BASE = "http://127.0.0.1:8001";
+    const BASE = API.PATIENT_CONTEXT;
 
     const [activeTab, setActiveTab] = useState("list"); // list | latest | request | stats
     const [patientId, setPatientId] = useState(defaultPatientId);
