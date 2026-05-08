@@ -9,6 +9,7 @@ import SOAPNoteCard from "./SOAPNoteCard";
 import PatientExplanationCard from "./PatientExplanationCard";
 import RiskAttributionCard from "./RiskAttributionCard";
 import MetaCard from "./MetaCard";
+import ImagingTriageCard from "./ImagingTriageCard";
 import { ACCENT, BORDER, BG, TEXT, MUTED, GREEN, RED, YELLOW, SURFACE, TERMINAL_BG } from "./tokens";
 
 function TabBar({ activeTab, setActiveTab, finalData }) {
@@ -119,6 +120,7 @@ export default function ResultsPanel({ finalData, streamEvents, isStreaming, cur
                                 <LabCard finalData={finalData} />
                                 <DrugSafetyCard finalData={finalData} />
                             </div>
+                            {finalData?.imaging_performed && <ImagingTriageCard finalData={finalData} />}
                             <DigitalTwinCard finalData={finalData} />
                             <SOAPNoteCard finalData={finalData} />
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
