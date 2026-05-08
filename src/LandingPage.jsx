@@ -435,11 +435,9 @@ export default function LandingPage() {
       </div>
     </div>
 
-    {/* RIGHT — floating cards + image (hidden on mobile, shown on desktop) */}
+    {/* RIGHT — desktop: side-by-side with full floating cards */}
     {width >= 1024 && (
       <div style={{ position: "relative", height: 520 }}>
-
-        {/* Doctor image */}
         <div style={{
           position: "absolute", inset: 0, borderRadius: 20, overflow: "hidden",
           border: "1px solid rgba(129,140,248,0.2)",
@@ -460,46 +458,80 @@ export default function LandingPage() {
               : "linear-gradient(to bottom, transparent 40%, rgba(245,244,255,0.75) 100%)",
           }} />
         </div>
-
-        {/* Floating card 1 — top right */}
         <div style={{ position: "absolute", top: 24, right: -20, zIndex: 10, animation: "fadeSlideRight 0.8s 0.6s both" }}>
           <LiveAnalysisCard />
         </div>
-
-        {/* Floating card 2 — bottom left */}
         <div style={{ position: "absolute", bottom: 32, left: -16, zIndex: 10, animation: "fadeSlideUp 0.8s 0.8s both" }}>
           <PatientCard />
         </div>
       </div>
     )}
 
-    {/* RIGHT — compact image banner shown only on tablet (640–1023px) */}
+    {/* RIGHT — tablet: full-height image with scaled-down cards inside */}
     {width >= 640 && width < 1024 && (
       <div style={{
-        position: "relative", height: 280, borderRadius: 16, overflow: "hidden",
+        position: "relative",
+        width: "100%",
+        aspectRatio: "16 / 9",
+        minHeight: 340,
+        borderRadius: 18, overflow: "hidden",
         border: "1px solid rgba(129,140,248,0.2)",
-        boxShadow: isDark ? "0 16px 48px rgba(0,0,0,0.5)" : "0 16px 48px rgba(129,140,248,0.12)",
+        boxShadow: isDark ? "0 20px 56px rgba(0,0,0,0.55)" : "0 20px 56px rgba(129,140,248,0.14)",
       }}>
         <img
           src="/hero-doctor.png" alt="Clinical AI"
           style={{
-            width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top",
+            position: "absolute", inset: 0,
+            width: "100%", height: "100%",
+            objectFit: "cover", objectPosition: "center top",
             filter: isDark ? "brightness(0.55) saturate(0.8)" : "brightness(0.85) saturate(0.9)",
           }}
         />
         <div style={{
           position: "absolute", inset: 0,
           background: isDark
-            ? "linear-gradient(to bottom, transparent 40%, rgba(8,6,26,0.85) 100%)"
-            : "linear-gradient(to bottom, transparent 40%, rgba(245,244,255,0.75) 100%)",
+            ? "linear-gradient(to bottom, transparent 30%, rgba(8,6,26,0.7) 100%)"
+            : "linear-gradient(to bottom, transparent 30%, rgba(245,244,255,0.6) 100%)",
         }} />
-        {/* Floating cards tucked inside on tablet — no negative overflow */}
-        <div style={{ position: "absolute", top: 16, right: 16, zIndex: 10 }}>
+        <div style={{
+          position: "absolute", top: 14, right: 14, zIndex: 10,
+          transform: "scale(0.78)", transformOrigin: "top right",
+        }}>
           <LiveAnalysisCard />
         </div>
-        <div style={{ position: "absolute", bottom: 16, left: 16, zIndex: 10 }}>
+        <div style={{
+          position: "absolute", bottom: 14, left: 14, zIndex: 10,
+          transform: "scale(0.78)", transformOrigin: "bottom left",
+        }}>
           <PatientCard />
         </div>
+      </div>
+    )}
+
+    {/* RIGHT — mobile: full-width image, no floating cards */}
+    {width < 640 && (
+      <div style={{
+        width: "100%",
+        aspectRatio: "4 / 3",
+        borderRadius: 16, overflow: "hidden",
+        border: "1px solid rgba(129,140,248,0.2)",
+        boxShadow: isDark ? "0 16px 48px rgba(0,0,0,0.5)" : "0 16px 48px rgba(129,140,248,0.12)",
+        position: "relative",
+      }}>
+        <img
+          src="/hero-doctor.png" alt="Clinical AI"
+          style={{
+            width: "100%", height: "100%",
+            objectFit: "cover", objectPosition: "center top",
+            filter: isDark ? "brightness(0.6) saturate(0.8)" : "brightness(0.88) saturate(0.9)",
+          }}
+        />
+        <div style={{
+          position: "absolute", inset: 0,
+          background: isDark
+            ? "linear-gradient(to bottom, transparent 40%, rgba(8,6,26,0.7) 100%)"
+            : "linear-gradient(to bottom, transparent 40%, rgba(245,244,255,0.55) 100%)",
+        }} />
       </div>
     )}
   </div>

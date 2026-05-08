@@ -10,8 +10,6 @@ import ResultsPanel from "../components/orchestrator/ResultsPanel";
 import { LiveTextPanel } from "../components/orchestrator/StreamPanel";
 import { GLOBAL_STYLES, BG, SURFACE, BORDER, TEXT, MUTED, SUBTLE, ACCENT, CYAN, PURPLE } from "../components/orchestrator/tokens";
 
-const BREADCRUMBS = [{ label: "Dashboard", path: "/dashboard" }];
-
 const INITIAL_RESULTS = {
     patient_context: null, diagnosis: null, lab_analysis: null,
     drug_safety: null, imaging_triage: null, digital_twin: null,
@@ -20,13 +18,13 @@ const INITIAL_RESULTS = {
 
 export default function OrchestratorPage() {
     const navigate = useNavigate();
-    const [isStreaming, setIsStreaming] = useState(false);
+    const [isStreaming,  setIsStreaming]  = useState(false);
     const [streamEvents, setStreamEvents] = useState([]);
-    const [liveText, setLiveText] = useState("");
-    const [results, setResults] = useState(INITIAL_RESULTS);
-    const [currentStep, setCurrentStep] = useState(null);
-    const [error, setError] = useState(null);
-    const [copied, setCopied] = useState(false);
+    const [liveText,     setLiveText]     = useState("");
+    const [results,      setResults]      = useState(INITIAL_RESULTS);
+    const [currentStep,  setCurrentStep]  = useState(null);
+    const [error,        setError]        = useState(null);
+    const [copied,       setCopied]       = useState(false);
 
     const abortControllerRef = useRef(null);
 
@@ -56,9 +54,9 @@ export default function OrchestratorPage() {
                 signal: abortControllerRef.current.signal,
             });
             if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            const reader = response.body.getReader();
+            const reader  = response.body.getReader();
             const decoder = new TextDecoder();
-            let buffer = "";
+            let buffer    = "";
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
@@ -99,14 +97,14 @@ export default function OrchestratorPage() {
         return nodeNames.some(n => !results[n]);
     };
 
-    const finalData = results.final;
+    const finalData  = results.final;
     const hasResults = isStreaming || streamEvents.length > 0;
 
     return (
         <div style={{ minHeight: "100vh", background: BG, color: TEXT, fontFamily: "'Space Grotesk', system-ui, sans-serif" }}>
             <style>{GLOBAL_STYLES}</style>
 
-            {/* ── Sticky nav ── */}
+            {/* Sticky nav */}
             <nav style={{
                 position: "sticky", top: 0, zIndex: 50, height: 56,
                 background: "color-mix(in srgb, var(--color-bg) 90%, transparent)",
@@ -134,12 +132,8 @@ export default function OrchestratorPage() {
                         <div style={{ width: 24, height: 24, background: ACCENT, borderRadius: 5, display: "flex", alignItems: "center", justifyContent: "center" }}>
                             <span style={{ color: "#fff", fontSize: 8, fontWeight: 900 }}>MT</span>
                         </div>
-                        {BREADCRUMBS.map(c => (
-                            <span key={c.path} style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                                <ChevronRight size={10} color={SUBTLE} />
-                                <button onClick={() => navigate(c.path)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, fontWeight: 600, color: SUBTLE, padding: 0 }}>{c.label}</button>
-                            </span>
-                        ))}
+                        <ChevronRight size={10} color={SUBTLE} />
+                        <button onClick={() => navigate("/dashboard")} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, fontWeight: 600, color: SUBTLE, padding: 0 }}>Dashboard</button>
                         <ChevronRight size={10} color={SUBTLE} />
                         <span style={{ fontSize: 11, fontWeight: 700, color: TEXT }}>Orchestrator</span>
                     </div>
@@ -154,7 +148,7 @@ export default function OrchestratorPage() {
                 </div>
             </nav>
 
-            {/* ── Hero ── */}
+            {/* Hero */}
             <div style={{ background: SURFACE, borderBottom: `1px solid ${BORDER}`, position: "relative", overflow: "hidden" }}>
                 <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, ${ACCENT}, ${CYAN}, ${PURPLE}, rgba(99,102,241,0.3))` }} />
                 <div style={{ position: "absolute", top: -60, right: -60, width: 320, height: 320, borderRadius: "50%", background: `radial-gradient(circle, ${ACCENT}0E 0%, transparent 70%)`, pointerEvents: "none" }} />
@@ -180,7 +174,7 @@ export default function OrchestratorPage() {
                 </div>
             </div>
 
-            {/* ── Main layout ── */}
+            {/* Main layout */}
             <div style={{ maxWidth: 1500, margin: "0 auto", padding: "20px 24px", display: "grid", gridTemplateColumns: "380px 1fr", gap: 16, alignItems: "start" }}>
 
                 {/* LEFT: Input + SSE log */}
