@@ -242,7 +242,7 @@ export default function ConversationalChatbot() {
                         } else if (evt.type === "complete") {
                             setMessages(prev => prev.map(m =>
                                 m.id === assistantId
-                                    ? { ...m, content: evt.answer || m.content, streaming: false, mode: evt.mode, toolsUsed: evt.tools_called || [] }
+                                    ? { ...m, content: m.content || evt.answer, streaming: false, mode: evt.mode, toolsUsed: evt.tools_called || [] }
                                     : m
                             ));
                             setIsStreaming(false);
