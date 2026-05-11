@@ -29,5 +29,7 @@ export const API = {
   IMAGING_TRIAGE:   isDev ? 'https://imaging-production.up.railway.app' : '/api/imaging-triage',
   DIGITAL_TWIN:     isDev ? 'https://twin-production-708e.up.railway.app' : '/api/digital-twin',
   EXPLANATION:      isDev ? 'http://127.0.0.1:8009' : '/api/explanation',
-  CONVERSATIVE:     isDev ? 'https://conversative-production.up.railway.app/' : '/api/conversative-agent',
+  CONVERSATIVE: isDev 
+    ? '/api/conversative-agent'   // proxied locally
+    : 'https://conversative-production.up.railway.app',  // direct in prod
 };
