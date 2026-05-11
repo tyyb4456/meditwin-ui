@@ -5,7 +5,7 @@ import { ACCENT, BORDER, BG, TEXT, MUTED, DIM, RED, inputStyle, labelStyle } fro
 
 export default function InputPanel({ onSubmit, isStreaming }) {
     const [jsonInput, setJsonInput] = useState(JSON.stringify({
-        patient_id: "example-patient-001",
+        patient_id: "example",
         chief_complaint: "fever and weakness",
         fhir_base_url: "https://hapi.fhir.org/baseR4",
     }, null, 2));

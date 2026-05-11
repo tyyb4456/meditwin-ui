@@ -37,7 +37,7 @@ const modes = [
     badgeColor: "#F59E0B",
     description: "LangGraph-based orchestration triggers all relevant agents, manages inter-agent communication, and delivers comprehensive clinical insights.",
     features: ["Multi-agent coordination", "Parallel execution", "Consensus-driven output"],
-    stat: { val: "< 12s", label: "Full Pipeline" },
+    stat: { val: "", label: "Full Pipeline" },
     accent: "#F59E0B",
   },
 ];
