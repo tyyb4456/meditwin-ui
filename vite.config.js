@@ -11,15 +11,15 @@ export default defineConfig({
     // (/api/<service>/*) work in both local dev and Docker without any
     // code differences.
     proxy: {
-      '/api/orchestrator':       { target: 'http://127.0.0.1:8000', rewrite: path => path.replace(/^\/api\/orchestrator/, ''), changeOrigin: true },
-      '/api/patient-context':    { target: 'http://127.0.0.1:8001', rewrite: path => path.replace(/^\/api\/patient-context/, ''), changeOrigin: true },
-      '/api/diagnosis':          { target: 'http://127.0.0.1:8002', rewrite: path => path.replace(/^\/api\/diagnosis/, ''), changeOrigin: true },
-      '/api/lab-analysis':       { target: 'http://127.0.0.1:8003', rewrite: path => path.replace(/^\/api\/lab-analysis/, ''), changeOrigin: true },
-      '/api/drug-safety':        { target: 'http://127.0.0.1:8004', rewrite: path => path.replace(/^\/api\/drug-safety/, ''), changeOrigin: true },
-      '/api/imaging-triage':     { target: 'http://127.0.0.1:8005', rewrite: path => path.replace(/^\/api\/imaging-triage/, ''), changeOrigin: true },
-      '/api/digital-twin':       { target: 'http://127.0.0.1:8006', rewrite: path => path.replace(/^\/api\/digital-twin/, ''), changeOrigin: true },
+      '/api/orchestrator':       { target: 'https://orchestator-production-ab58.up.railway.app', rewrite: path => path.replace(/^\/api\/orchestrator/, ''), changeOrigin: true },
+      '/api/patient-context':    { target: 'https://patient-context-production.up.railway.app', rewrite: path => path.replace(/^\/api\/patient-context/, ''), changeOrigin: true },
+      '/api/diagnosis':          { target: 'https://diagnosis-production-b583.up.railway.app', rewrite: path => path.replace(/^\/api\/diagnosis/, ''), changeOrigin: true },
+      '/api/lab-analysis':       { target: 'https://lab-production-9bda.up.railway.app', rewrite: path => path.replace(/^\/api\/lab-analysis/, ''), changeOrigin: true },
+      '/api/drug-safety':        { target: 'https://drug-production-a7d4.up.railway.app', rewrite: path => path.replace(/^\/api\/drug-safety/, ''), changeOrigin: true },
+      '/api/imaging-triage':     { target: 'https://imaging-production.up.railway.app', rewrite: path => path.replace(/^\/api\/imaging-triage/, ''), changeOrigin: true },
+      '/api/digital-twin':       { target: 'https://twin-production-708e.up.railway.app', rewrite: path => path.replace(/^\/api\/digital-twin/, ''), changeOrigin: true },
       '/api/explanation':        { target: 'http://127.0.0.1:8009', rewrite: path => path.replace(/^\/api\/explanation/, ''), changeOrigin: true },
-      '/api/conversative-agent': { target: 'http://127.0.0.1:8010', rewrite: path => path.replace(/^\/api\/conversative-agent/, ''), changeOrigin: true },
+      '/api/conversative-agent': { target: 'https://conversative-production.up.railway.app', rewrite: path => path.replace(/^\/api\/conversative-agent/, ''), changeOrigin: true },
     },
   },
 })
