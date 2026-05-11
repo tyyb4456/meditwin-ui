@@ -21,13 +21,13 @@ const isDev = import.meta.env.DEV;
  * In production the Nginx reverse proxy handles the routing.
  */
 export const API = {
-  ORCHESTRATOR:     isDev ? 'http://127.0.0.1:8000' : '/api/orchestrator',
-  PATIENT_CONTEXT:  isDev ? 'http://127.0.0.1:8001' : '/api/patient-context',
-  DIAGNOSIS:        isDev ? 'http://127.0.0.1:8002' : '/api/diagnosis',
-  LAB_ANALYSIS:     isDev ? 'http://127.0.0.1:8003' : '/api/lab-analysis',
-  DRUG_SAFETY:      isDev ? 'http://127.0.0.1:8004' : '/api/drug-safety',
-  IMAGING_TRIAGE:   isDev ? 'http://127.0.0.1:8005' : '/api/imaging-triage',
-  DIGITAL_TWIN:     isDev ? 'http://127.0.0.1:8006' : '/api/digital-twin',
+  ORCHESTRATOR:     isDev ? 'https://orchestator-production-ab58.up.railway.app' : '/api/orchestrator',
+  PATIENT_CONTEXT:  isDev ? 'https://patient-context-production.up.railway.app' : '/api/patient-context',
+  DIAGNOSIS:        isDev ? 'https://diagnosis-production-b583.up.railway.app' : '/api/diagnosis',
+  LAB_ANALYSIS:     isDev ? 'https://lab-production-9bda.up.railway.app' : '/api/lab-analysis',
+  DRUG_SAFETY:      isDev ? 'https://drug-production-a7d4.up.railway.app' : '/api/drug-safety',
+  IMAGING_TRIAGE:   isDev ? 'https://imaging-production.up.railway.app' : '/api/imaging-triage',
+  DIGITAL_TWIN:     isDev ? 'https://twin-production-708e.up.railway.app' : '/api/digital-twin',
   EXPLANATION:      isDev ? 'http://127.0.0.1:8009' : '/api/explanation',
-  CONVERSATIVE:     isDev ? 'http://127.0.0.1:8010' : '/api/conversative-agent',
+  CONVERSATIVE:     isDev ? 'https://conversative-production.up.railway.app/' : '/api/conversative-agent',
 };
