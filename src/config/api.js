@@ -21,13 +21,13 @@ const isDev = import.meta.env.DEV;
  * In production the Nginx reverse proxy handles the routing.
  */
 export const API = {
-  ORCHESTRATOR:     isDev ? 'https://orchestator-production-ab58.up.railway.app' : '/api/orchestrator',
-  PATIENT_CONTEXT:  isDev ? 'https://patient-context-production.up.railway.app' : '/api/patient-context',
-  DIAGNOSIS:        isDev ? 'https://diagnosis-production-b583.up.railway.app' : '/api/diagnosis',
-  LAB_ANALYSIS:     isDev ? 'https://lab-production-9bda.up.railway.app' : '/api/lab-analysis',
-  DRUG_SAFETY:      isDev ? 'https://drug-production-a7d4.up.railway.app' : '/api/drug-safety',
-  IMAGING_TRIAGE:   isDev ? 'https://imaging-production.up.railway.app' : '/api/imaging-triage',
-  DIGITAL_TWIN:     isDev ? 'https://twin-production-708e.up.railway.app' : '/api/digital-twin',
+  ORCHESTRATOR:    isDev ? '/api/orchestrator'    : 'https://orchestator-production-ab58.up.railway.app',
+  PATIENT_CONTEXT: isDev ? '/api/patient-context' : 'https://patient-context-production.up.railway.app',
+  DIAGNOSIS:       isDev ? '/api/diagnosis'       : 'https://diagnosis-production-b583.up.railway.app',
+  LAB_ANALYSIS:    isDev ? '/api/lab-analysis'    : 'https://lab-production-9bda.up.railway.app',
+  DRUG_SAFETY:     isDev ? '/api/drug-safety'     : 'https://drug-production-a7d4.up.railway.app',
+  IMAGING_TRIAGE:  isDev ? '/api/imaging-triage'  : 'https://imaging-production.up.railway.app',
+  DIGITAL_TWIN:    isDev ? '/api/digital-twin'    : 'https://twin-production-708e.up.railway.app',
   EXPLANATION:      isDev ? 'http://127.0.0.1:8009' : '/api/explanation',
   CONVERSATIVE: isDev 
     ? '/api/conversative-agent'   // proxied locally
