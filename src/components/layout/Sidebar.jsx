@@ -1,8 +1,9 @@
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Network, MessageSquare, Workflow,
   UserCheck, Brain, FlaskConical, Shield, Eye, GitBranch,
-  Activity,
+  Activity, X,
 } from "lucide-react";
 import ThemeToggle from "../theme/ThemeToggle";
 
@@ -84,14 +85,27 @@ function NavItem({ item, isActive, onClick }) {
   );
 }
 
-export default function Sidebar() {
+export default function Sidebar({ isOpen, onClose }) {
   const navigate = useNavigate();
   const location = useLocation();
   const path = location.pathname;
 
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
+
   const isActive = itemPath => {
     if (itemPath === "/dashboard") return path === "/dashboard";
     return path === itemPath || path.startsWith(itemPath + "/");
+  };
+
+  const handleNavigate = (itemPath) => {
+    navigate(itemPath);
+    if (isMobile) onClose?.();
   };
 
   return (
@@ -108,6 +122,8 @@ export default function Sidebar() {
         flexDirection: "column",
         zIndex: 40,
         overflowY: "auto",
+        transition: "transform 0.28s cubic-bezier(0.4,0,0.2,1)",
+        transform: isMobile ? (isOpen ? "translateX(0)" : "translateX(-100%)") : "translateX(0)",
       }}
     >
       {/* Logo */}
@@ -120,7 +136,7 @@ export default function Sidebar() {
           borderBottom: "1px solid var(--color-border)",
           cursor: "pointer",
         }}
-        onClick={() => navigate("/")}
+        onClick={() => { navigate("/"); if (isMobile) onClose?.(); }}
       >
         <div
           style={{
@@ -136,7 +152,7 @@ export default function Sidebar() {
         >
           <Activity size={16} strokeWidth={2.2} style={{ color: "#fff" }} />
         </div>
-        <div>
+        <div style={{ flex: 1 }}>
           <p
             style={{
               fontSize: 14,
@@ -160,6 +176,25 @@ export default function Sidebar() {
             AI
           </p>
         </div>
+        {isMobile && (
+          <button
+            onClick={e => { e.stopPropagation(); onClose?.(); }}
+            style={{
+              background: "none",
+              border: "1px solid var(--color-border)",
+              color: "var(--color-text-subtle)",
+              borderRadius: 6,
+              padding: "4px",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}
+          >
+            <X size={14} />
+          </button>
+        )}
       </div>
 
       {/* Nav */}
@@ -189,7 +224,7 @@ export default function Sidebar() {
             key={item.path}
             item={item}
             isActive={isActive(item.path)}
-            onClick={() => navigate(item.path)}
+            onClick={() => handleNavigate(item.path)}
           />
         ))}
 
@@ -218,7 +253,7 @@ export default function Sidebar() {
             key={item.path}
             item={item}
             isActive={isActive(item.path)}
-            onClick={() => navigate(item.path)}
+            onClick={() => handleNavigate(item.path)}
           />
         ))}
       </nav>
@@ -233,7 +268,6 @@ export default function Sidebar() {
           gap: 10,
         }}
       >
-        {/* Live status */}
         <div
           style={{
             display: "flex",

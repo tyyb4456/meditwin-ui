@@ -22,6 +22,16 @@ const PURPLE  = "#8B5CF6";
 const RED     = "#EF4444";
 const GREEN   = "#22C55E";
 
+function useWindowWidth() {
+    const [width, setWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 1200);
+    useEffect(() => {
+        const handler = () => setWidth(window.innerWidth);
+        window.addEventListener("resize", handler);
+        return () => window.removeEventListener("resize", handler);
+    }, []);
+    return width;
+}
+
 const CONV_API = `${API.CONVERSATIVE}/conversations`;
 
 const GLOBAL_STYLES = `
@@ -137,7 +147,7 @@ function MessageBubble({ msg }) {
                     {msg.toolEvents.map((e, i) => <ToolBadge key={i} event={e} />)}
                 </div>
             )}
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 10, maxWidth: "85%" }}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 10, maxWidth: "92%" }}>
                 {!isUser && (
                     <div style={{ width: 30, height: 30, borderRadius: 8, flexShrink: 0, background: `linear-gradient(135deg, ${EMERALD} 0%, rgba(16,185,129,0.55) 100%)`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 4px 12px ${EMERALD}30` }}>
                         <Bot size={14} color="#fff" strokeWidth={1.75} />
@@ -191,13 +201,30 @@ function MessageBubble({ msg }) {
     );
 }
 
-function Sidebar({ conversations, activeId, onSelect, onNew, onDelete, collapsed, onToggle, loading }) {
+function Sidebar({ conversations, activeId, onSelect, onNew, onDelete, collapsed, onToggle, loading, isMobile }) {
     return (
+        <>
+            {/* Mobile backdrop */}
+            {isMobile && !collapsed && (
+                <div
+                    onClick={onToggle}
+                    style={{
+                        position: "fixed", inset: 0, zIndex: 40,
+                        background: "rgba(0,0,0,0.5)", backdropFilter: "blur(2px)",
+                    }}
+                />
+            )}
         <div style={{
             width: collapsed ? 0 : 260, minWidth: collapsed ? 0 : 260,
             overflow: "hidden", transition: "width 0.25s ease, min-width 0.25s ease",
             borderRight: collapsed ? "none" : `1px solid ${BORDER}`,
             background: SURFACE, display: "flex", flexDirection: "column", flexShrink: 0,
+            // On mobile: fixed overlay drawer
+            ...(isMobile && !collapsed ? {
+                position: "fixed", top: 0, left: 0, bottom: 0,
+                zIndex: 50, width: 260, minWidth: 260,
+                boxShadow: "4px 0 24px rgba(0,0,0,0.3)",
+            } : {}),
         }}>
             {!collapsed && (
                 <>
@@ -279,20 +306,28 @@ function Sidebar({ conversations, activeId, onSelect, onNew, onDelete, collapsed
                 </>
             )}
         </div>
+        </>
     );
 }
 
 export default function ConversationalChatbot() {
     const navigate = useNavigate();
+    const width = useWindowWidth();
+    const isMobile = width < 640;
 
     const [conversations,     setConversations]     = useState([]);
     const [activeId,          setActiveId]          = useState(null);
     const [messages,          setMessages]          = useState([]);
-    const [sidebarCollapsed,  setSidebarCollapsed]  = useState(false);
+    const [sidebarCollapsed,  setSidebarCollapsed]  = useState(width < 640);
     const [input,             setInput]             = useState("");
     const [isStreaming,       setIsStreaming]        = useState(false);
     const [error,             setError]             = useState(null);
     const [loadingConvs,      setLoadingConvs]      = useState(true);
+
+    // Auto-collapse sidebar when screen shrinks to mobile
+    useEffect(() => {
+        if (isMobile) setSidebarCollapsed(true);
+    }, [isMobile]);
 
     const messagesEndRef = useRef(null);
     const inputRef       = useRef(null);
@@ -489,8 +524,8 @@ export default function ConversationalChatbot() {
             <style>{GLOBAL_STYLES}</style>
 
             {/* ── Nav ── */}
-            <nav style={{ flexShrink: 0, height: 52, zIndex: 50, background: "color-mix(in srgb, var(--color-bg) 90%, transparent)", backdropFilter: "blur(16px)", borderBottom: `1px solid ${BORDER}`, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 16px" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <nav style={{ flexShrink: 0, height: 52, zIndex: 50, background: "color-mix(in srgb, var(--color-bg) 90%, transparent)", backdropFilter: "blur(16px)", borderBottom: `1px solid ${BORDER}`, display: "flex", alignItems: "center", justifyContent: "space-between", padding: isMobile ? "0 12px" : "0 16px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 6 : 10 }}>
                     <button
                         onClick={() => navigate("/dashboard")}
                         style={{ background: "none", border: `1px solid ${BORDER}`, color: SUBTLE, borderRadius: 7, padding: "5px 10px", cursor: "pointer", display: "flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", transition: "all 0.2s" }}
@@ -511,29 +546,40 @@ export default function ConversationalChatbot() {
                         </button>
                     )}
 
-                    <div style={{ width: 1, height: 18, background: BORDER }} />
-                    <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                        <div style={{ width: 22, height: 22, background: EMERALD, borderRadius: 5, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                            <span style={{ color: "#fff", fontSize: 8, fontWeight: 900 }}>MT</span>
-                        </div>
-                        <ChevronRight size={10} color={SUBTLE} />
-                        <button onClick={() => navigate("/dashboard")} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, fontWeight: 600, color: SUBTLE, padding: 0 }}>Dashboard</button>
-                        <ChevronRight size={10} color={SUBTLE} />
-                        <span style={{ fontSize: 11, fontWeight: 700, color: TEXT }}>Conversational AI</span>
-                    </div>
+                    {!isMobile && (
+                        <>
+                            <div style={{ width: 1, height: 18, background: BORDER }} />
+                            <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                                <div style={{ width: 22, height: 22, background: EMERALD, borderRadius: 5, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                    <span style={{ color: "#fff", fontSize: 8, fontWeight: 900 }}>MT</span>
+                                </div>
+                                <ChevronRight size={10} color={SUBTLE} />
+                                <button onClick={() => navigate("/dashboard")} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, fontWeight: 600, color: SUBTLE, padding: 0 }}>Dashboard</button>
+                                <ChevronRight size={10} color={SUBTLE} />
+                                <span style={{ fontSize: 11, fontWeight: 700, color: TEXT }}>Conversational AI</span>
+                            </div>
+                        </>
+                    )}
+
+                    {isMobile && (
+                        <span style={{ fontSize: 13, fontWeight: 700, color: TEXT }}>Conversational AI</span>
+                    )}
                 </div>
 
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 5, background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 7, padding: "4px 10px" }}>
-                        <Wifi size={10} color={EMERALD} />
-                        <span style={{ fontSize: 11, color: MUTED, fontFamily: "monospace" }}>:8010</span>
-                    </div>
+                <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 6 : 8 }}>
+                    {!isMobile && (
+                        <div style={{ display: "flex", alignItems: "center", gap: 5, background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 7, padding: "4px 10px" }}>
+                            <Wifi size={10} color={EMERALD} />
+                            <span style={{ fontSize: 11, color: MUTED, fontFamily: "monospace" }}>:8010</span>
+                        </div>
+                    )}
                     <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", padding: "4px 10px", border: `1px solid ${EMERALD}40`, borderRadius: 7, color: EMERALD, background: `${EMERALD}0E` }}>
-                        Tool Agent
+                        {isMobile ? "AI" : "Tool Agent"}
                     </div>
                     {isStreaming && (
                         <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10, fontWeight: 700, color: EMERALD }}>
-                            <Loader2 size={10} style={{ animation: "spin 1s linear infinite" }} /> Streaming
+                            <Loader2 size={10} style={{ animation: "spin 1s linear infinite" }} />
+                            {!isMobile && "Streaming"}
                         </div>
                     )}
                     <ThemeToggle />
@@ -546,18 +592,19 @@ export default function ConversationalChatbot() {
                 <Sidebar
                     conversations={conversations}
                     activeId={activeId}
-                    onSelect={selectConversation}
-                    onNew={newChat}
+                    onSelect={(id) => { selectConversation(id); if (isMobile) setSidebarCollapsed(true); }}
+                    onNew={() => { newChat(); if (isMobile) setSidebarCollapsed(true); }}
                     onDelete={deleteConversation}
                     collapsed={sidebarCollapsed}
                     onToggle={() => setSidebarCollapsed(v => !v)}
                     loading={loadingConvs}
+                    isMobile={isMobile}
                 />
 
                 <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
 
                     {/* ── Messages ── */}
-                    <div style={{ flex: 1, overflowY: "auto", padding: "24px" }}>
+                    <div style={{ flex: 1, overflowY: "auto", padding: isMobile ? "16px" : "24px" }}>
                         {isEmpty ? (
                             <div style={{ maxWidth: 620, margin: "32px auto 0", textAlign: "center", animation: "fadeUp 0.5s ease" }}>
                                 <div style={{ width: 60, height: 60, borderRadius: 16, margin: "0 auto 18px", background: `linear-gradient(135deg, ${EMERALD} 0%, rgba(16,185,129,0.55) 100%)`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 12px 32px ${EMERALD}30` }}>
@@ -601,23 +648,23 @@ export default function ConversationalChatbot() {
                     )}
 
                     {/* ── Input ── */}
-                    <div style={{ flexShrink: 0, borderTop: `1px solid ${BORDER}`, padding: "14px 24px", background: SURFACE }}>
-                        <div style={{ maxWidth: 820, margin: "0 auto", display: "flex", gap: 10, alignItems: "flex-end" }}>
+                    <div style={{ flexShrink: 0, borderTop: `1px solid ${BORDER}`, padding: isMobile ? "10px 12px" : "14px 24px", background: SURFACE }}>
+                        <div style={{ maxWidth: 820, margin: "0 auto", display: "flex", gap: 8, alignItems: "flex-end" }}>
                             <div style={{ flex: 1 }}>
                                 <textarea
                                     ref={inputRef}
                                     value={input}
                                     onChange={e => setInput(e.target.value)}
                                     onKeyDown={handleKeyDown}
-                                    placeholder="Ask about a patient, diagnoses, drug safety, labs, or any medical question…"
+                                    placeholder={isMobile ? "Ask a medical question…" : "Ask about a patient, diagnoses, drug safety, labs, or any medical question…"}
                                     rows={1}
-                                    style={{ width: "100%", resize: "none", overflow: "hidden", background: BG, border: `1px solid ${BORDER}`, color: TEXT, padding: "11px 14px", fontSize: 14, fontFamily: "inherit", outline: "none", borderRadius: 10, lineHeight: 1.5, maxHeight: 120, transition: "border-color 0.2s" }}
+                                    style={{ width: "100%", resize: "none", overflow: "hidden", background: BG, border: `1px solid ${BORDER}`, color: TEXT, padding: isMobile ? "10px 12px" : "11px 14px", fontSize: 14, fontFamily: "inherit", outline: "none", borderRadius: 10, lineHeight: 1.5, maxHeight: 120, transition: "border-color 0.2s" }}
                                     onInput={e => { e.target.style.height = "auto"; e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px"; }}
                                     disabled={isStreaming}
                                 />
                             </div>
                             {isStreaming ? (
-                                <button onClick={handleAbort} style={{ padding: "11px 16px", background: `${RED}12`, border: `1px solid ${RED}40`, color: RED, cursor: "pointer", borderRadius: 10, flexShrink: 0, display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700 }}
+                                <button onClick={handleAbort} style={{ padding: isMobile ? "10px 12px" : "11px 16px", background: `${RED}12`, border: `1px solid ${RED}40`, color: RED, cursor: "pointer", borderRadius: 10, flexShrink: 0, display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700 }}
                                     onMouseEnter={e => e.currentTarget.style.background = `${RED}20`}
                                     onMouseLeave={e => e.currentTarget.style.background = `${RED}12`}
                                 >
@@ -625,18 +672,25 @@ export default function ConversationalChatbot() {
                                 </button>
                             ) : (
                                 <button onClick={() => sendMessage()} disabled={!input.trim()}
-                                    style={{ padding: "11px 18px", background: input.trim() ? `linear-gradient(135deg, ${EMERALD}, rgba(16,185,129,0.8))` : BORDER, border: "none", color: "#fff", cursor: input.trim() ? "pointer" : "not-allowed", borderRadius: 10, flexShrink: 0, display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700, transition: "all 0.2s", boxShadow: input.trim() ? `0 4px 14px ${EMERALD}35` : "none" }}
+                                    style={{ padding: isMobile ? "10px 14px" : "11px 18px", background: input.trim() ? `linear-gradient(135deg, ${EMERALD}, rgba(16,185,129,0.8))` : BORDER, border: "none", color: "#fff", cursor: input.trim() ? "pointer" : "not-allowed", borderRadius: 10, flexShrink: 0, display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700, transition: "all 0.2s", boxShadow: input.trim() ? `0 4px 14px ${EMERALD}35` : "none" }}
                                     onMouseEnter={e => { if (input.trim()) e.currentTarget.style.transform = "translateY(-1px)"; }}
                                     onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}
                                 >
-                                    <Send size={14} /> Send
+                                    <Send size={14} /> {!isMobile && "Send"}
                                 </button>
                             )}
                         </div>
+                        {!isMobile && (
                         <p style={{ maxWidth: 820, margin: "7px auto 0", fontSize: 10, color: SUBTLE, textAlign: "center" }}>
                             <kbd style={{ background: BG, border: `1px solid ${BORDER}`, padding: "1px 5px", borderRadius: 3, fontSize: 9, fontFamily: "monospace" }}>Enter</kbd>{" "}to send ·{" "}
                             <kbd style={{ background: BG, border: `1px solid ${BORDER}`, padding: "1px 5px", borderRadius: 3, fontSize: 9, fontFamily: "monospace" }}>Shift+Enter</kbd>{" "}for new line · AI outputs require physician review
                         </p>
+                        )}
+                        {isMobile && (
+                        <p style={{ fontSize: 10, color: SUBTLE, textAlign: "center", marginTop: 6 }}>
+                            AI outputs require physician review
+                        </p>
+                        )}
                     </div>
                 </div>
             </div>

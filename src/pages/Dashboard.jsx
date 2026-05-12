@@ -11,8 +11,8 @@ const modes = [
     icon: Network,
     badge: "Advanced",
     badgeColor: "#6366F1",
-    description: "Each AI agent runs as an independent microservice. Direct access with granular control over every agent.",
-    features: ["Direct agent API access", "Independent scaling", ""],
+    description: "Each AI agent runs as an independent microservice. Direct port-based access (8001–8009) with granular control over every agent.",
+    features: ["Direct agent API access", "Independent scaling", "Port-based routing (8001–8009)"],
     stat: { val: "9", label: "Endpoints" },
     accent: "#6366F1",
   },
@@ -66,13 +66,15 @@ export default function Dashboard() {
 
   return (
     <AppLayout>
-      <div style={{
-        padding: "40px 40px 64px",
-        opacity: visible ? 1 : 0,
-        transform: visible ? "translateY(0)" : "translateY(14px)",
-        transition: "all 0.55s cubic-bezier(0.22,1,0.36,1)",
-      }}>
-
+      <div
+        className="dashboard-root"
+        style={{
+          padding: "40px 40px 64px",
+          opacity: visible ? 1 : 0,
+          transform: visible ? "translateY(0)" : "translateY(14px)",
+          transition: "all 0.55s cubic-bezier(0.22,1,0.36,1)",
+        }}
+      >
         {/* Page header */}
         <div style={{ marginBottom: 40 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
@@ -81,7 +83,7 @@ export default function Dashboard() {
               All systems operational
             </span>
           </div>
-          <h1 style={{ fontSize: "clamp(28px,4vw,42px)", fontWeight: 700, letterSpacing: "-0.03em", color: "var(--color-text)", lineHeight: 1.1, marginBottom: 10 }}>
+          <h1 style={{ fontSize: "clamp(24px,4vw,42px)", fontWeight: 700, letterSpacing: "-0.03em", color: "var(--color-text)", lineHeight: 1.1, marginBottom: 10 }}>
             Choose your mode
           </h1>
           <p style={{ fontSize: 14, color: "var(--color-text-muted)", lineHeight: 1.6, maxWidth: 460, fontWeight: 400 }}>
@@ -90,7 +92,7 @@ export default function Dashboard() {
         </div>
 
         {/* Mode Cards */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 12, marginBottom: 40 }}>
+        <div className="dashboard-cards-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12, marginBottom: 40 }}>
           {modes.map((mode, idx) => {
             const Icon = mode.icon;
             const isHovered = hoveredMode === mode.id;
@@ -112,7 +114,6 @@ export default function Dashboard() {
                   transitionDelay: `${0.07 + idx * 0.07}s`,
                 }}
               >
-                {/* Color top bar */}
                 <div style={{ height: 3, background: mode.accent, opacity: isHovered ? 1 : 0.4, transition: "opacity 0.22s" }} />
 
                 <div style={{ padding: "24px 22px" }}>
@@ -167,7 +168,7 @@ export default function Dashboard() {
         </div>
 
         {/* Bottom row: activity + notice */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <div className="dashboard-bottom-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
 
           {/* Recent activity */}
           <div style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", borderRadius: 14, padding: "22px 22px" }}>
@@ -182,11 +183,11 @@ export default function Dashboard() {
                     <div style={{ width: 32, height: 32, borderRadius: 8, background: item.color + "15", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                       <Icon size={14} strokeWidth={1.75} style={{ color: item.color }} />
                     </div>
-                    <div style={{ flex: 1 }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{ fontSize: 13, fontWeight: 600, color: "var(--color-text)", lineHeight: 1.3, marginBottom: 2 }}>{item.label}</p>
-                      <p style={{ fontSize: 11, color: "var(--color-text-subtle)", fontWeight: 400 }}>{item.sub}</p>
+                      <p style={{ fontSize: 11, color: "var(--color-text-subtle)", fontWeight: 400, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.sub}</p>
                     </div>
-                    <span style={{ fontSize: 11, color: "var(--color-text-subtle)", fontWeight: 400, whiteSpace: "nowrap" }}>{item.time}</span>
+                    <span style={{ fontSize: 11, color: "var(--color-text-subtle)", fontWeight: 400, whiteSpace: "nowrap", flexShrink: 0 }}>{item.time}</span>
                   </div>
                 );
               })}
@@ -220,7 +221,24 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <style>{`@keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.82)}}`}</style>
+      <style>{`
+        @keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.82)}}
+
+        @media (max-width: 768px) {
+          .dashboard-root {
+            padding: 20px 16px 48px !important;
+          }
+          .dashboard-bottom-grid {
+            grid-template-columns: 1fr !important;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .dashboard-cards-grid {
+            grid-template-columns: 1fr !important;
+          }
+        }
+      `}</style>
     </AppLayout>
   );
 }
