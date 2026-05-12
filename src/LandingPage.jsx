@@ -186,6 +186,8 @@ function StatItem({ val, label, active, delay = 0 }) {
 
 export default function LandingPage() {
   const width = useWindowWidth();
+  const isMobile = width < 640;
+  const isTablet = width < 1024;
   const navigate = useNavigate();
   const { theme } = useTheme();
   const isDark = theme === "dark";
@@ -243,7 +245,7 @@ export default function LandingPage() {
       <nav style={{
         position: "fixed", top: 0, left: 0, right: 0, zIndex: 50,
         display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "0 40px", height: 64,
+        padding: isMobile ? "0 16px" : "0 40px", height: 64,
         background: isDark ? "rgba(8,6,26,0.9)" : "rgba(255,255,255,0.92)",
         backdropFilter: "blur(20px)",
         borderBottom: `1px solid ${isDark ? "rgba(129,140,248,0.12)" : "var(--color-border)"}`,
@@ -257,6 +259,7 @@ export default function LandingPage() {
           </span>
         </div>
 
+        {!isMobile && (
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           {[["Agents", "agents-section", "agents"], ["Pipeline", "pipeline-section", "pipeline"], ["Stack", "stack-section", "stack"]].map(([label, id, key]) => (
             <button
@@ -277,20 +280,21 @@ export default function LandingPage() {
             </button>
           ))}
         </div>
+        )}
 
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 8 : 10 }}>
           <ThemeToggle />
           <button
             onClick={() => navigate("/dashboard")}
             style={{
-              padding: "9px 22px", background: "var(--color-accent)", color: "#fff",
-              border: "none", borderRadius: 24, fontSize: 13, fontWeight: 600, letterSpacing: "0.01em",
+              padding: isMobile ? "7px 14px" : "9px 22px", background: "var(--color-accent)", color: "#fff",
+              border: "none", borderRadius: 24, fontSize: isMobile ? 12 : 13, fontWeight: 600, letterSpacing: "0.01em",
               transition: "all 0.2s ease", display: "flex", alignItems: "center", gap: 6,
             }}
             onMouseEnter={e => { e.currentTarget.style.background = "var(--color-accent-hover)"; e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 6px 20px rgba(99,102,241,0.4)"; }}
             onMouseLeave={e => { e.currentTarget.style.background = "var(--color-accent)"; e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}
           >
-            Get Started <ArrowRight size={14} />
+            {isMobile ? "Demo" : "Get Started"} <ArrowRight size={14} />
           </button>
         </div>
       </nav>
@@ -547,7 +551,7 @@ export default function LandingPage() {
       {/* ══════════════════════════════════════════
           FEATURES
       ══════════════════════════════════════════ */}
-      <section ref={featRef} style={{ padding: "96px 40px", background: "var(--color-bg)" }}>
+      <section ref={featRef} style={{ padding: isMobile ? "64px 20px" : isTablet ? "80px 28px" : "96px 40px", background: "var(--color-bg)" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           <div style={{
             textAlign: "center", marginBottom: 56,
@@ -596,7 +600,7 @@ export default function LandingPage() {
       {/* ══════════════════════════════════════════
           THREE CLINICAL QUESTIONS — accent strip
       ══════════════════════════════════════════ */}
-      <section style={{ padding: "80px 40px", background: "var(--color-surface)", borderTop: "1px solid var(--color-border)", borderBottom: "1px solid var(--color-border)" }}>
+      <section style={{ padding: isMobile ? "56px 20px" : isTablet ? "64px 28px" : "80px 40px", background: "var(--color-surface)", borderTop: "1px solid var(--color-border)", borderBottom: "1px solid var(--color-border)" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           <p style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.24em", textTransform: "uppercase", color: "var(--color-accent)", marginBottom: 16 }}>
             The Three Clinical Questions
@@ -641,10 +645,13 @@ export default function LandingPage() {
       {/* ══════════════════════════════════════════
           AGENTS GRID
       ══════════════════════════════════════════ */}
-      <section id="agents-section" style={{ padding: "96px 40px" }}>
+      <section id="agents-section" style={{ padding: isMobile ? "64px 20px" : isTablet ? "80px 28px" : "96px 40px" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           <div ref={agentsRef} style={{
-            display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 40,
+            display: "flex", alignItems: isMobile ? "flex-start" : "flex-end",
+            flexDirection: isMobile ? "column" : "row",
+            justifyContent: "space-between", marginBottom: 40,
+            gap: isMobile ? 16 : 0,
             opacity: agentsOn ? 1 : 0, transform: agentsOn ? "translateY(0)" : "translateY(14px)",
             transition: "opacity 0.6s ease, transform 0.6s ease",
           }}>
@@ -737,7 +744,7 @@ export default function LandingPage() {
       {/* ══════════════════════════════════════════
           PIPELINE
       ══════════════════════════════════════════ */}
-      <section id="pipeline-section" style={{ padding: "96px 40px", background: "var(--color-surface)", borderTop: "1px solid var(--color-border)" }}>
+      <section id="pipeline-section" style={{ padding: isMobile ? "64px 20px" : isTablet ? "80px 28px" : "96px 40px", background: "var(--color-surface)", borderTop: "1px solid var(--color-border)" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           <div ref={pipeRef} style={{
             opacity: pipeOn ? 1 : 0, transform: pipeOn ? "translateY(0)" : "translateY(14px)",
@@ -761,7 +768,7 @@ export default function LandingPage() {
                     onClick={() => setActiveStep(p => p === i ? null : i)}
                     style={{
                       width: "100%", textAlign: "left", background: "none", border: "none", cursor: "pointer",
-                      display: "flex", alignItems: "flex-start", gap: 24, padding: "24px 28px",
+                      display: "flex", alignItems: "flex-start", gap: isMobile ? 14 : 24, padding: isMobile ? "18px 16px" : "24px 28px",
                       background: isActive ? "var(--color-accent-dim)" : "transparent",
                       borderRadius: 12, borderLeft: `3px solid ${isActive ? "var(--color-accent)" : "transparent"}`,
                       transition: "all 0.22s ease",
@@ -799,7 +806,7 @@ export default function LandingPage() {
       {/* ══════════════════════════════════════════
           TECH STACK
       ══════════════════════════════════════════ */}
-      <section id="stack-section" style={{ padding: "96px 40px" }}>
+      <section id="stack-section" style={{ padding: isMobile ? "64px 20px" : isTablet ? "80px 28px" : "96px 40px" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           <div ref={stackRef} style={{
             opacity: stackOn ? 1 : 0, transform: stackOn ? "translateY(0)" : "translateY(14px)",
@@ -834,19 +841,19 @@ export default function LandingPage() {
       {/* ══════════════════════════════════════════
           IMAGING TRIAGE METRICS
       ══════════════════════════════════════════ */}
-      <section id="imaging-metrics" style={{ padding: "96px 40px", background: "var(--color-surface)" }}>
+      <section id="imaging-metrics" style={{ padding: isMobile ? "64px 20px" : isTablet ? "80px 28px" : "96px 40px", background: "var(--color-surface)" }}>
         <div style={{ maxWidth: 1152, margin: "0 auto" }}>
           <div ref={imagingRef} style={{ opacity: imagingOn ? 1 : 0, transform: imagingOn ? "translateY(0)" : "translateY(20px)", transition: "opacity 0.7s ease, transform 0.7s ease" }}>
             <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.3em", textTransform: "uppercase", color: "var(--color-text-subtle)", marginBottom: 12 }}>Model Performance</p>
-            <h2 style={{ fontSize: "clamp(32px,4vw,48px)", fontWeight: 900, textTransform: "uppercase", letterSpacing: "-0.03em", color: "var(--color-text)", marginBottom: 16 }}>Imaging Triage</h2>
-            <p style={{ color: "var(--color-text-muted)", fontSize: 15, fontWeight: 500, marginBottom: 64, maxWidth: 700 }}>
+            <h2 style={{ fontSize: isMobile ? 28 : "clamp(32px,4vw,48px)", fontWeight: 900, textTransform: "uppercase", letterSpacing: "-0.03em", color: "var(--color-text)", marginBottom: 16 }}>Imaging Triage</h2>
+            <p style={{ color: "var(--color-text-muted)", fontSize: isMobile ? 14 : 15, fontWeight: 500, marginBottom: isMobile ? 40 : 64, maxWidth: 700 }}>
               Chest X-ray pneumonia detection using deep learning CNNs trained on 5,856 images.
               Production model achieves <span style={{ color: "var(--color-accent)", fontWeight: 700 }}>95.5% accuracy</span> and <span style={{ color: "var(--color-accent)", fontWeight: 700 }}>99.2% AUC</span>.
             </p>
           </div>
 
           {/* Model comparison grid */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 1, background: "var(--color-border)" }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(2, 1fr)", gap: 1, background: "var(--color-border)" }}>
             {[
               {
                 title: "Custom CNN", subtitle: "Baseline Architecture", production: false, delay: 100, metrics: [
@@ -868,7 +875,7 @@ export default function LandingPage() {
               <div
                 key={model.title}
                 style={{
-                  background: "var(--color-bg)", padding: 32, position: "relative",
+                  background: "var(--color-bg)", padding: isMobile ? 20 : 32, position: "relative",
                   opacity: imagingOn ? 1 : 0, transform: imagingOn ? "translateY(0)" : "translateY(16px)",
                   transition: `opacity 0.6s ease ${model.delay}ms, transform 0.6s ease ${model.delay}ms`,
                   cursor: "default",
@@ -885,22 +892,22 @@ export default function LandingPage() {
                   }}>PRODUCTION</div>
                 )}
                 <div style={{ marginBottom: 24 }}>
-                  <h3 style={{ fontSize: 22, fontWeight: 900, color: "var(--color-text)", marginBottom: 6 }}>{model.title}</h3>
+                  <h3 style={{ fontSize: isMobile ? 18 : 22, fontWeight: 900, color: "var(--color-text)", marginBottom: 6, paddingRight: model.production ? 96 : 0 }}>{model.title}</h3>
                   <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: "var(--color-text-subtle)" }}>{model.subtitle}</p>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                   {model.metrics.map((metric, i) => (
-                    <div key={metric.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--color-text-muted)" }}>{metric.label}</span>
-                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                        <div style={{ width: 128, height: 5, background: "var(--color-border)", borderRadius: 3, overflow: "hidden" }}>
+                    <div key={metric.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--color-text-muted)", flexShrink: 0 }}>{metric.label}</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 8 : 12, flex: 1, justifyContent: "flex-end" }}>
+                        <div style={{ flex: 1, maxWidth: isMobile ? 80 : isTablet ? 80 : 128, height: 5, background: "var(--color-border)", borderRadius: 3, overflow: "hidden" }}>
                           <div style={{
                             height: "100%", background: "var(--color-accent)", borderRadius: 3,
                             width: imagingOn ? `${metric.raw * 100}%` : "0%",
                             transition: `width 1s ease ${i * 100 + model.delay + 100}ms`,
                           }} />
                         </div>
-                        <span style={{ fontSize: 17, fontWeight: 900, color: "var(--color-text)", fontVariantNumeric: "tabular-nums", minWidth: 72, textAlign: "right" }}>{metric.value}</span>
+                        <span style={{ fontSize: isMobile ? 14 : 17, fontWeight: 900, color: "var(--color-text)", fontVariantNumeric: "tabular-nums", minWidth: isMobile ? 58 : 72, textAlign: "right", flexShrink: 0 }}>{metric.value}</span>
                       </div>
                     </div>
                   ))}
@@ -914,19 +921,19 @@ export default function LandingPage() {
       {/* ══════════════════════════════════════════
           DIGITAL TWIN METRICS
       ══════════════════════════════════════════ */}
-      <section id="twin-metrics" style={{ padding: "96px 40px", background: "var(--color-bg)" }}>
+      <section id="twin-metrics" style={{ padding: isMobile ? "64px 20px" : isTablet ? "80px 28px" : "96px 40px", background: "var(--color-bg)" }}>
         <div style={{ maxWidth: 1152, margin: "0 auto" }}>
           <div ref={twinRef} style={{ opacity: twinOn ? 1 : 0, transform: twinOn ? "translateY(0)" : "translateY(20px)", transition: "opacity 0.7s ease, transform 0.7s ease" }}>
             <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.3em", textTransform: "uppercase", color: "var(--color-text-subtle)", marginBottom: 12 }}>Synthetic Data Training</p>
-            <h2 style={{ fontSize: "clamp(32px,4vw,48px)", fontWeight: 900, textTransform: "uppercase", letterSpacing: "-0.03em", color: "var(--color-text)", marginBottom: 16 }}>Digital Twin Risk Models</h2>
-            <p style={{ color: "var(--color-text-muted)", fontSize: 15, fontWeight: 500, marginBottom: 64, maxWidth: 700 }}>
+            <h2 style={{ fontSize: isMobile ? 28 : "clamp(32px,4vw,48px)", fontWeight: 900, textTransform: "uppercase", letterSpacing: "-0.03em", color: "var(--color-text)", marginBottom: 16 }}>Digital Twin Risk Models</h2>
+            <p style={{ color: "var(--color-text-muted)", fontSize: isMobile ? 14 : 15, fontWeight: 500, marginBottom: isMobile ? 40 : 64, maxWidth: 700 }}>
               Five XGBoost classifiers trained on <span style={{ color: "var(--color-accent)", fontWeight: 700 }}>8,000 synthetic patient records</span>{" "}
               with 19 clinical features. 80/20 train-test split for outcome prediction.
             </p>
           </div>
 
           {/* Risk models grid */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1, background: "var(--color-border)" }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : isTablet ? "repeat(2, 1fr)" : "repeat(3, 1fr)", gap: 1, background: "var(--color-border)" }}>
             {[
               { name: "30-Day Readmission", auc: 0.727, prevalence: "20.3%", delay: 100 },
               { name: "30-Day Mortality", auc: 0.740, prevalence: "9.9%", delay: 150 },
@@ -937,7 +944,7 @@ export default function LandingPage() {
               <div
                 key={model.name}
                 style={{
-                  background: "var(--color-bg)", padding: 24, position: "relative", overflow: "hidden",
+                  background: "var(--color-bg)", padding: isMobile ? 20 : 24, position: "relative", overflow: "hidden",
                   opacity: twinOn ? 1 : 0, transform: twinOn ? "translateY(0)" : "translateY(16px)",
                   transition: `opacity 0.6s ease ${model.delay}ms, transform 0.6s ease ${model.delay}ms`,
                   cursor: "default",
@@ -961,7 +968,7 @@ export default function LandingPage() {
                     <div>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                         <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: "var(--color-text-subtle)" }}>AUC</span>
-                        <span style={{ fontSize: 24, fontWeight: 900, color: "var(--color-text)", fontVariantNumeric: "tabular-nums" }}>{model.auc.toFixed(3)}</span>
+                        <span style={{ fontSize: isMobile ? 20 : 24, fontWeight: 900, color: "var(--color-text)", fontVariantNumeric: "tabular-nums" }}>{model.auc.toFixed(3)}</span>
                       </div>
                       <div style={{ width: "100%", height: 4, background: "var(--color-border)", borderRadius: 2, overflow: "hidden", marginBottom: 12 }}>
                         <div style={{
@@ -986,7 +993,7 @@ export default function LandingPage() {
       {/* ══════════════════════════════════════════
           CTA
       ══════════════════════════════════════════ */}
-      <section ref={ctaRef} style={{ background: isDark ? "linear-gradient(135deg, #08061A 0%, #0E0C28 50%, #08061A 100%)" : "linear-gradient(135deg, #f5f4ff 0%, #ede9fe 50%, #f5f4ff 100%)", padding: "100px 40px", position: "relative", overflow: "hidden" }}>
+      <section ref={ctaRef} style={{ background: isDark ? "linear-gradient(135deg, #08061A 0%, #0E0C28 50%, #08061A 100%)" : "linear-gradient(135deg, #f5f4ff 0%, #ede9fe 50%, #f5f4ff 100%)", padding: isMobile ? "72px 20px" : isTablet ? "88px 28px" : "100px 40px", position: "relative", overflow: "hidden" }}>
         <div style={{
           position: "absolute", inset: 0, pointerEvents: "none",
           backgroundImage: "linear-gradient(rgba(129,140,248,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(129,140,248,0.05) 1px, transparent 1px)",
@@ -1030,9 +1037,10 @@ export default function LandingPage() {
 
       {/* ── FOOTER ───────────────────────────────────────────── */}
       <footer style={{
-        background: "var(--color-surface)", padding: "28px 40px",
+        background: "var(--color-surface)", padding: isMobile ? "24px 20px" : "28px 40px",
         borderTop: "1px solid var(--color-border)",
-        display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 16,
+        display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: isMobile ? "center" : "space-between",
+        gap: isMobile ? 12 : 16, textAlign: isMobile ? "center" : "left",
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{ width: 28, height: 28, borderRadius: 7, background: "var(--color-accent)", display: "flex", alignItems: "center", justifyContent: "center" }}>
